@@ -2,39 +2,34 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
+import os
 
-import model
-import util
+import time
 
-imgs = load_labeled_images()
+from util import load_labeled_images
+from model import make_generator_model
+from model import make_discriminator_model
+from model import generator_loss
+from model import discriminator_loss
+
+
+path_csv = "/cluster/home/hannepfa/cosmology_aux_data/labeled.csv"
+path_labeled_images = "/cluster/home/hannepfa/cosmology_aux_data/labeled"
+
+path_checkpoint_dir = "/cluster/home/hannepfa/checkpoints"
+
+
+imgs = load_labeled_images(path_csv, path_labeled_images, augment=False)
+
 
 generator = make_generator_model()
 discriminator = make_discriminator_model()
-
-
-# This method returns a helper function to compute cross entropy loss
-cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-
-
-def discriminator_loss(real_output, fake_output):
-    real_loss = cross_entropy(tf.ones_like(real_output), real_output)
-    fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
-    total_loss = real_loss + fake_loss
-    return total_loss
-
-
-def generator_loss(fake_output):
-    return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
 generator_optimizer = tf.keras.optimizers.Adam(lr=2e-4, beta_1=0.5)
 discriminator_optimizer = tf.keras.optimizers.Adam(lr=2e-4, beta_1=0.5)
 
 
-# TODO: save checkpoint data
-checkpoint_dir = "/cluster/home/hannepfa/checkpoints"
-
-checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
 checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, 
                                  discriminator_optimizer=discriminator_optimizer,
                                  generator=generator,
@@ -65,25 +60,26 @@ def train_step(images, batch_size):
     
 def train(epochs, batch_size):
   
-    num_batches = imgs.shape[0] // batch_size
+    num_batches = len(imgs) // batch_size
   
     for epoch in range(epochs):
     
         for iteration in range(num_batches):    
     
-            images = imgs[iteration * batch_size : (iteration + 1) * batch_size]
+            batch = imgs[iteration * batch_size : (iteration + 1) * batch_size]
                       
-            train_step(images, batch_size)
+            train_step(batch, batch_size)
+            
         
-        # TODO: save checkpoint data
-        # Save the model every 15 epochs
-        if (epoch + 1) % 15 == 0:
-            checkpoint.save(file_prefix = checkpoint_prefix)
+        if (epoch + 1) % 20 == 0:
+            
+            checkpoint.save(file_prefix=os.path.join(path_checkpoint_dir, "ckpt"))
 
+
+epochs = 100
+batch_size = 24
+
+train(epochs, batch_size)
         
-epochs = 65
-batch_size = 32
-
-train(epochs, batch_size)      
 
   

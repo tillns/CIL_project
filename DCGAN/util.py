@@ -1,15 +1,14 @@
 
 import os
+
 from PIL import Image
 from PIL import ImageOps
+
 import numpy as np
 
 
-path_csv = "/cluster/home/hannepfa/cosmology_aux_data/labeled.csv"
-path_labeled_images = "/cluster/home/hannepfa/cosmology_aux_data/labeled"
-
-
-def load_labeled_images():
+# augment=True: additionaly create a mirrored copy of each image
+def load_labeled_images(path_csv, path_labeled_images, augment=False):
     
     try:
         csv_file = open(path_csv, "r")
@@ -39,15 +38,18 @@ def load_labeled_images():
         assert len(labels) == len(list_filenames)
 
         # i suppose an image needs approximately
-        # sizeof(np.float32) * 3 * 1000 * 1000 B of RAM
+        # sizeof(np.float32) * 1 * 1000 * 1000 B of RAM
 
-        images = np.empty((0, 1000, 1000, 1), dtype=np.float32) # images - array is empty as first dimension is zero
-
+        # a list works well in terms of performance
+        images = [] # images
+        mirror_images = [] # mirror images
+                
         for idx, filename in enumerate(list_filenames):
             if labels[idx] == 1.0: # include only images with label == 1.0
 
-                img = Image.open(os.path.join(path_labeled_images, filename))     
-                arr = np.array(img, dtype=np.float32).reshape((1, 1000, 1000, 1))
+                img = Image.open(os.path.join(path_labeled_images, filename)) 
+                
+                arr = np.array(img, dtype=np.float32).reshape((1000, 1000, 1))
 
                 #if(idx == 20):
                 #    print("min value: {}\t\tmax value: {}".format(np.amin(arr), np.amax(arr)))
@@ -59,32 +61,23 @@ def load_labeled_images():
                 #if(idx == 20):
                 #    print("min value: {}\t\tmax value: {}".format(np.amin(arr), np.amax(arr)))
 
-                images = np.append(images, arr, axis=0)
-
-        #print(images.shape)
+                images.append(arr)
+                
+                if augment == True:
+                    mirror_img = ImageOps.mirror(img)
+   
+                    mirror_arr = np.array(mirror_img, dtype=np.float32).reshape((1000, 1000, 1))
+                    mirror_arr = np.subtract(mirror_arr, 127.5)
+                    mirror_arr = np.divide(mirror_arr, 127.5)
+            
+                    mirror_images.append(mirror_arr)
+                        
+        images.extend(mirror_images) # no return value
         
-        return images
+        # conversion allows for batches to be extracted
+        return np.stack(images)
 
     except Error:
         print("error: failed to load dataset.")
-        
 
-def augment_images(images):
-    
-    # augmented images - array is empty as first dimension is zero
-    reflected_images = np.empty((0, 1000, 1000, 1), dtype=np.float32)
-    
-    num_images = images.shape[0]
-    
-    for idx in range(num_images):
         
-        img = Image.fromarray(images[idx, :, :, 1])
-        img = ImageOps.mirror(img)
-        arr = np.array(img, dtype=np.float32).reshape((1, 1000, 1000, 1))
-        
-        reflected_images = np.append(images, arr, axis=0)
-        
-    augmented_images = np.append(images, reflected_images, axis=0)
-    
-    return augmented_images
-
