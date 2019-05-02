@@ -10,26 +10,32 @@ https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced pub
 **Virtual environment setup**
 
 *need modules python, CUDA, cuDNN*    
+
 module load gcc/4.8.5 python_gpu/3.6.4 hdf5 eth_proxy  
 module load cudnn/7.4  
 module load cuda/10.0.130  
 
 *install virtualenvwrapper*  
+
 pip install --user virtualenvwrapper   
 source $HOME/.local/bin/virtualenvwrapper.sh  
 
 *create virtual environment*  
+
 mkvirtualenv "galaxy-image-tf2"
 
 *disable / enable virtual environment*  
+
 deactivate   
 workon "galaxy-image-tf2"  
 
 *install required dependencies*  
+
 pip install tensorflow-gpu==2.0.0-alpha0  
 pip install Pillow  
 
 *add to ~/.bashrc*  
+
 module load gcc/4.8.5 python_gpu/3.6.4 hdf5 eth_proxy  
 module load cudnn/7.4  
 module load cuda/10.0.130  
