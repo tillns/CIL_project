@@ -29,7 +29,7 @@ mkvirtualenv "galaxy-image-tf2"
 deactivate   
 workon "galaxy-image-tf2"  
 
-*install required dependencies*  
+*install tf 2.0 and PIL*  
 
 pip install tensorflow-gpu==2.0.0-alpha0  
 pip install Pillow  
@@ -40,5 +40,5 @@ module load gcc/4.8.5 python_gpu/3.6.4 hdf5 eth_proxy
 module load cudnn/7.4  
 module load cuda/10.0.130  
 source $HOME/.local/bin/virtualenvwrapper.sh  
-workon "env-name"  
+workon "galaxy-image-tf2"  
 
