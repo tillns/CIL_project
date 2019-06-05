@@ -54,9 +54,9 @@ def test_model():
     plt.yticks([])
     plt.grid(False)
     label = label_list[ind][1]
-    img = Image.open(os.path.join(scored_directory, label_list[ind][0]+".png")).resize((image_size, image_size))
+    img = Image.open(os.path.join(scored_directory, label_list[ind][0]+".png"))
     img_np = np.array(img, dtype=np.float32).reshape((1, image_size, image_size, image_channels)) / 255
-    score = model(img_np, training=False)
+    score = model(img_np)
     plt.imshow(img_np[0,:,:,0], cmap='gray', vmin=0, vmax=1)
     plt.xlabel("{}\no: {}\ny: {}".format(label_list[ind][0], score.numpy()[0, 0], label))
   plt.show()
@@ -84,7 +84,6 @@ use_dummy_dataset = False
 use_bias = conf['use_bias']
 period_to_save_cp = conf['period_to_save_cp']
 tot_num_epochs = conf['tot_num_epochs']
-label_range = 8  # labels go from 0 to 8
 
 try:
   f=open(label_path,'r')
@@ -119,9 +118,8 @@ except FileNotFoundError:
 def load_dataset():
   global train_images, train_labels, test_images, test_labels
   if not use_dummy_dataset:
-    np_data_path = os.path.join(classifier_dir, "numpy_data/{}_p{:.1f}_s{}.dat".format('{}', percentage_train, image_size))
-    trainset_path = np_data_path.format("queryset") if test_on_query else np_data_path.format("trainset")
-    testset_path = np_data_path.format('testset')
+    trainset_path = 'trainset_p{:.1f}_s{}.dat'.format(percentage_train, image_size)
+    testset_path = 'testset_p{:.1f}_s{}.dat'.format(1 - percentage_train, image_size)
     both_paths_exist = os.path.exists(trainset_path) and (percentage_train == 1 or os.path.exists(testset_path))
     mode = 'r+' if both_paths_exist else 'w+'
     train_images = np.memmap(trainset_path, dtype=np.float32, mode=mode,
@@ -181,10 +179,10 @@ def get_pad(x, total_padding=0):
     return x[:, rand1:s[1]-total_padding+rand1, rand2:s[2]-total_padding+rand2]
 
 class Padder(tf.keras.layers.Layer):
-  def __init__(self, padding=6, **kwargs):
-    super(Padder, self).__init__(**kwargs)
+  def __init__(self, padding=6):
+    super(Padder, self).__init__()
     self.padding = padding
-
+  
   def call(self, x):
     return get_pad(x, self.padding)
 
@@ -234,17 +232,6 @@ class SigmoidLayer(tf.keras.layers.Layer):
   def get_config(self):
     return {}
 
-class CrossEntropy(tf.keras.losses.Loss):
-    def call(self, y_true, y_pred):
-        from tensorflow.python.ops import math_ops
-        from tensorflow.python.framework import ops
-        y_pred = ops.convert_to_tensor(y_pred)
-        y_true = math_ops.cast(y_true, y_pred.dtype)
-        return - math_ops.log(1-math_ops.abs(y_true-y_pred)/label_range)
-
-
-
-
 
 # parames for model 1
 def get_model():
@@ -261,7 +248,7 @@ def get_model():
     while res > min_res:
       if res%2 != 0:
         closest2res = min(res2, key=lambda x:abs(x-res))
-        model.add(Padder(padding=closest2res-res, input_shape=(res, res, image_channels)))  # 125 -> 128 or maybe 25 -> 32...
+        model.add(Padder(padding=closest2res-res))  # 125 -> 128 or maybe 25 -> 32...
         res = closest2res
       model.add(tf.keras.layers.Conv2D(features, kernel, padding='same', strides=2, use_bias=use_bias,
                                        input_shape=(res, res, image_channels)))
@@ -337,7 +324,8 @@ if restore_checkpoint:
       json_config = json_file.read()
     model = keras.models.model_from_json(json_config, custom_objects={'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer':SigmoidLayer})
     model.load_weights(specific_path)
-    #print(model.summary())
+    print(model.summary())
+    test_model()
   else:
     print("Couldn't find a checkpoint. Starting from scratch.")
 
@@ -346,10 +334,6 @@ else:
 
 
 if test_on_query:
-  with open(os.path.join(cp_dir_time, "config.yaml"), 'r') as stream:
-    conf = yaml.load(stream)
-  image_size = conf['image_size']
-  test_model()
   load_dataset()
   with open(os.path.join(cp_dir_time, 'query{}.csv'.format(epoch_start)), 'w') as csvfile:
       filewriter = csv.writer(csvfile, delimiter=',',
@@ -359,7 +343,7 @@ if test_on_query:
       for i in range(train_images.shape[0]):
           current = train_images[i]
           current = tf.expand_dims(current, 0)
-          score = model(current, training=False)
+          score = model(current)
           filewriter.writerow([img_list[i].split(".")[0], score.numpy()[0, 0]])
           print("\rScored image {}/{}".format(i+1, dataset_len), end="")
 
@@ -387,12 +371,10 @@ else:
 
   loss_type = conf['loss_type']
   learning_rate = conf['lr']
-  if loss_type == "CE":
-    loss_func = CrossEntropy()  # from_logits=True ?
+  if loss_type == "BCE":
+    loss_func = tf.keras.losses.BinaryCrossentropy()  # from_logits=True ?
   elif loss_type == "MSE":
     loss_func = tf.keras.losses.MeanSquaredError()
-  else:
-    loss_func = tf.keras.losses.MeanAbsoluteError()
 
   optimizer = tf.keras.optimizers.Adam(learning_rate)
 
@@ -448,7 +430,6 @@ else:
                             steps_per_epoch=whole_len // batch_size, initial_epoch=counter,
                             epochs=counter+epochs, callbacks=[tensorboard_callback, cp_callback], shuffle=True,
                             validation_data=validation_data)
-    test_model()
     # save whole model after first run through
     counter += epochs
     if validation_data is not None:
