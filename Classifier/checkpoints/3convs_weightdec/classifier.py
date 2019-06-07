@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 # TensorFlow and tf.keras
 import tensorflow as tf
-
+from tensorflow import keras
+from tensorflow.keras import layers
 
 # Helper libraries
 import numpy as np
@@ -18,7 +19,6 @@ from sklearn.linear_model import LinearRegression
 import csv
 import yaml
 import gc
-
 
 print(tf.__version__)
 
@@ -298,7 +298,7 @@ def get_model():
         kernel_regularizer = tf.keras.regularizers.l1(conf['weight_reg_factor'])
 
 
-    model = tf.keras.Sequential(name='till_model')
+    model = keras.Sequential(name='till_model')
     while res > conf['min_res']:
         if res % conf['downsample_stride'] != 0:
             closestexpres = min(resexp, key=lambda x: abs(x - res))
@@ -393,7 +393,7 @@ if restore_checkpoint:
         custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer}
         if conf['norm_type'] == 'pixel':
             custom_objects['Pixel_norm'] = Pixel_norm
-        model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
+        model = keras.models.model_from_json(json_config, custom_objects=custom_objects)
         model.load_weights(specific_path)
         model.summary()
     else:
@@ -436,7 +436,7 @@ else:
     tb_path = os.path.join(cp_dir_time, "summary")
     if not os.path.exists(tb_path):
         os.makedirs(tb_path)
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path)
+    tensorboard_callback = keras.callbacks.TensorBoard(log_dir=tb_path)
 
     linear_model = LinearRegression()
 

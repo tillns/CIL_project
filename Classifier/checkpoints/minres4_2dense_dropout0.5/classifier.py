@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 # TensorFlow and tf.keras
 import tensorflow as tf
-
+from tensorflow import keras
+from tensorflow.keras import layers
 
 # Helper libraries
 import numpy as np
@@ -18,7 +19,6 @@ from sklearn.linear_model import LinearRegression
 import csv
 import yaml
 import gc
-
 
 print(tf.__version__)
 
@@ -81,6 +81,9 @@ query_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_a
 image_directory = query_directory if test_on_query else scored_directory
 percentage_train = conf['percentage_train'] if not test_on_query else 1
 print("Searching for images in {}".format(image_directory))
+max_elements = conf['max_elements']
+whole_len = max_elements
+break_point = round(percentage_train * whole_len)
 use_dummy_dataset = False
 period_to_save_cp = conf['period_to_save_cp']
 tot_num_epochs = conf['tot_num_epochs']
@@ -106,8 +109,9 @@ try:
 
     img_list = sorted(img_list)
     dataset_len = len(img_list)
-    train_len = round(percentage_train * dataset_len)
-    test_len = dataset_len - train_len
+    whole_len = min(dataset_len, max_elements) if not test_on_query else dataset_len
+    train_len = round(percentage_train * whole_len)
+    test_len = whole_len - train_len
     if not test_on_query:
         assert len(label_list) == dataset_len
 
@@ -150,7 +154,7 @@ def load_dataset():
                 test_labels[num - int(dataset_len * percentage_train)] = label_list[num][1]
                 if not both_paths_exist:
                     test_images[num - int(dataset_len * percentage_train)] = img_np
-            print("\rLoaded image {}/{}".format(num + 1, dataset_len), end="")
+            print("\rLoaded image {}/{}".format(num + 1, whole_len), end="")
         print("")
 
     else:
@@ -298,7 +302,7 @@ def get_model():
         kernel_regularizer = tf.keras.regularizers.l1(conf['weight_reg_factor'])
 
 
-    model = tf.keras.Sequential(name='till_model')
+    model = keras.Sequential(name='till_model')
     while res > conf['min_res']:
         if res % conf['downsample_stride'] != 0:
             closestexpres = min(resexp, key=lambda x: abs(x - res))
@@ -390,10 +394,8 @@ if restore_checkpoint:
         # model = tf.keras.models.load_model(os.path.join(model_path), custom_objects={'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer':SigmoidLayer})
         with open(model_path) as json_file:
             json_config = json_file.read()
-        custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer}
-        if conf['norm_type'] == 'pixel':
-            custom_objects['Pixel_norm'] = Pixel_norm
-        model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
+        model = keras.models.model_from_json(json_config, custom_objects={'Padder': Padder, 'FactorLayer': FactorLayer,
+                                                                          'SigmoidLayer': SigmoidLayer})
         model.load_weights(specific_path)
         model.summary()
     else:
@@ -436,7 +438,7 @@ else:
     tb_path = os.path.join(cp_dir_time, "summary")
     if not os.path.exists(tb_path):
         os.makedirs(tb_path)
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path)
+    tensorboard_callback = keras.callbacks.TensorBoard(log_dir=tb_path)
 
     linear_model = LinearRegression()
 
@@ -500,7 +502,7 @@ else:
         else:
             validation_data = None
         H = model.fit_generator(aug.flow(train_images, train_labels, batch_size=batch_size),
-                                steps_per_epoch=dataset_len // batch_size, initial_epoch=counter,
+                                steps_per_epoch=whole_len // batch_size, initial_epoch=counter,
                                 epochs=counter + epochs, callbacks=[tensorboard_callback, cp_callback], shuffle=True,
                                 validation_data=validation_data)
         #test_model()
