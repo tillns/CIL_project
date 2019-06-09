@@ -1,0 +1,27 @@
+# general conf
+image_size: 125
+percentage_train: 0.8
+max_elements: 9600
+period_to_save_cp: 5
+num_epochs_for_lin_regression: 20
+tot_num_epochs: 400
+batch_size: 20
+lr: 0.001
+train_loss_type: MSE  # CE, MSE or MAE
+val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
+rot_range: 0
+
+# model conf
+num_convs_per_downsample: 1
+downsample_stride: 2
+num_dense_layers: 2
+kernel: 3
+features: 4
+max_features: 32
+norm_type: batch
+min_res: 4
+lrelu_alpha: 0.2
+use_bias: False
+dropout: 0.5
+weight_reg_kind: l2
+weight_reg_factor: 0
