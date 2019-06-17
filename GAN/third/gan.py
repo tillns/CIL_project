@@ -23,7 +23,7 @@ from random import shuffle
 from datetime import datetime
 from tensorflow.python.keras.engine import training_utils
 import cv2
-from Models import Models
+from Models import Models, FactorLayer, Padder, SigmoidLayer
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # disables some annoying tensorflow warnings
 """### Set initial parameters"""
 
@@ -37,8 +37,14 @@ min_res = conf['min_res']
 image_channels = 1
 home_dir = os.path.expanduser("~")
 gan_dir = os.path.join(home_dir, "CIL_project/GAN/third")
-image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
+classifier_cp_dir = os.path.join(home_dir, "CIL_project/Classifier/checkpoints")
+labeled_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
 label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled.csv")
+star_directory = os.path.join(home_dir, "CIL_project/extracted_stars")
+if image_size == 28:
+    image_directory = star_directory
+else:
+    image_directory = labeled_directory
 
 max_features = conf['max_features']
 # all numbers that 1000 can be evenly downsampled to
@@ -65,23 +71,12 @@ def detransform(numpy_image_array):
 
 
 try:
-    f = open(label_path, 'r')
-    print("Found Labels")
-    label_list = []
-    for line in f:
-        if not "Id,Actual" in line:
-            split_line = line.split(",")
-            split_line[-1] = float(split_line[-1])
-            label_list.append(split_line)
-    label_list = sorted(label_list)
-
     img_list = []
     for filename in os.listdir(image_directory):
         if filename.endswith(".png") and not filename.startswith("._"):
             img_list.append(filename)
 
     img_list = sorted(img_list)
-    assert len(img_list) == len(label_list)
 except FileNotFoundError:
     sys.exit("Can't find dataset")
 
@@ -92,9 +87,7 @@ def load_dataset():
     for num in range(len(img_list)):
         img = Image.open(os.path.join(image_directory, img_list[num])).resize((image_size, image_size))
         img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
-        label = label_list[num][1]
-        if label == 1:
-            images.append(img_np)
+        images.append(img_np)
     dataset_len = len(images)
     train_len = round(percentage_train * dataset_len)
     test_len = dataset_len - train_len
@@ -206,6 +199,7 @@ class CallbackList(object):
         dis_metrics = ['dis_loss']
         if do_validation:
             dis_metrics.append('dis_val_loss')
+            dis_metrics.append('gen_val_loss')
         self.params = {'dis': {
             'batch_size': batch_size,
             'epochs': num_epochs,
@@ -220,7 +214,7 @@ class CallbackList(object):
             'steps': num_train_it,
             'samples': train_len,
             'verbose': verbose,
-            'do_validation': False,
+            'do_validation': do_validation,
             'metrics': gen_metrics,  # not sure here
         }, 'comb': {
             'batch_size': batch_size,
@@ -440,6 +434,16 @@ progbar.on_train_begin()
 # callbacks.print_models()
 # print("Graph: {}".format(tf.keras.backend.get_session().graph))
 
+if do_validation:
+    val_cp_path = os.path.join(classifier_cp_dir, conf['val_model_cp'])
+    val_model_path = os.path.join("/".join(val_cp_path.split("/")[:-1]), "model_config.json")
+    with open(val_model_path) as json_file:
+        json_config = json_file.read()
+    custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer}
+    val_model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
+    val_model.load_weights(val_cp_path)
+    val_model.summary()
+
 for epoch in range(num_epochs):
     gen_losses = 0
     dis_losses = 0
@@ -468,21 +472,20 @@ for epoch in range(num_epochs):
     # only test dis on one randomly drawn batch of test data per epoch
     if do_validation:
         callbacks._call_begin_hook('test')
-        batch_logs = {'dis': {'batch': 0, 'size': batch_size}}
-        callbacks._call_batch_hook('test', 'begin', 0, batch_logs)
         dis_val_loss = 0
+        gen_val_loss = 0
         for iteration in range(num_test_it):
             x_ = test_images[iteration*batch_size:min(test_len, (iteration+1)*batch_size)]
             real_output = discriminator(x_, training=False)
             noise = tf.random.normal([batch_size, gconf['input_neurons']])
             generated_images = generator(noise, training=False)
             fake_output = discriminator(generated_images, training=False)
-
+            val_output = val_model(generated_images, training=False)/8
+            gen_val_loss += generator_loss(val_output)
             dis_val_loss += discriminator_loss(real_output, fake_output, x_, generated_images, discriminator)
-        batch_logs['dis']['loss'] = dis_val_loss/num_test_it
-        callbacks._call_batch_hook('test', 'end', 0, batch_logs)
         callbacks._call_end_hook('test')
-        epoch_logs['dis']['dis_val_loss'] = dis_val_loss
+        epoch_logs['dis']['dis_val_loss'] = dis_val_loss/num_test_it
+        epoch_logs['gen']['gen_val_loss'] = gen_val_loss/num_test_it
 
     # Save the model every few epochs
     if (epoch + 1) % conf['period_to_save_cp'] == 0:

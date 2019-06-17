@@ -1,23 +1,22 @@
 # general conf
-image_size: 125
+image_size: 28
 image_channels: 1
-vmin: 0
+vmin: -1
 vmax: 1
-percentage_train: 0.9
-max_elements: 9600
+percentage_train: 0.8
 period_to_save_cp: 5
-num_epochs_for_lin_regression: 20
 num_epochs: 400
-batch_size: 25
+batch_size: 100
 lr: 0.0001
 train_loss_type: MSE  # CE, MSE or MAE
 val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
 gan_loss: Default
 rot_range: 0
+val_model_cp: 3convs/cp-0137.ckpt
 
 # general model conf
 
-model_kind: 1
+model_kind: 2
 num_convs_per_res: 1
 kernel: 5
 features: 4
@@ -27,7 +26,7 @@ min_res: 4
 lrelu_alpha: 0.2
 weight_reg_kind: l2
 weight_reg_factor: 0
-ratio_gen_dis: 1
+ratio_gen_dis: 3
 # special generator and discriminator conf
 dis:
   strided_conv: True
