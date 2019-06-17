@@ -15,11 +15,11 @@ import os
 import csv
 
 parser = ArgumentParser()
-parser.add_argument("--data-directory", required=True)
-parser.add_argument("--numpy-directory", required=True)
-parser.add_argument("--num_features", default=10, type=int)
-parser.add_argument("--split_ratio", default=0.9, type=float)
-parser.add_argument("--random-seed", default=1234, type=int)
+parser.add_argument("--data-directory", required=True, help="Required. The directory where the dataset is stored.")
+parser.add_argument("--numpy-directory", required=True, help="Required. The directory where the numpy data is stored or should be stored. This directory doesn't have to exists yet.")
+parser.add_argument("--num_features", default=10, type=int, help="Optional. The number of features per image taken into consideration. Default is 10")
+parser.add_argument("--split_ratio", default=0.9, type=float, help="Optional. The train-test split ratio of the data to be stored. The value has to be between 0 and 1. Default is 0.9")
+parser.add_argument("--random-seed", default=1234, type=int, help="Optional. A integer to seed the random number generator. Default is 1234")
 
 def train_model(arguments):
     """Trains a random forest classifier
