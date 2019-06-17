@@ -74,27 +74,6 @@ class TanhLayer(tf.keras.layers.Layer):
         return {}
 
 
-# nearest neighbor upscaling. copied from progressive GAN paper; adjusted bc dimensions were ordered differently.
-class Upscale2D(tf.keras.layers.Layer):
-    def __init__(self, factor=2):
-        super(Upscale2D, self).__init__()
-        self.factor = factor
-
-    def call(self, x):
-        assert isinstance(self.factor, int) and self.factor >= 1
-        if self.factor == 1:
-            return x
-        s = x.shape
-        x = tf.reshape(x, [-1, s[1], 1, s[2], 1, s[3]])
-        x = tf.tile(x, [1, 1, self.factor, 1, self.factor, 1])
-        x = tf.reshape(x, [-1, s[1] * self.factor, s[2] * self.factor, s[3]])
-        return x
-
-    def get_config(self):
-        config = {'factor': self.factor}
-        base_config = super(Upscale2D, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
-
 
 # This is kind of a spetial implementation as the padding is TOTAL, so both sides combined
 class Padder(tf.keras.layers.Layer):
@@ -122,6 +101,7 @@ class Models():
         self.conf = conf
         self.model_kind = 3 if conf['image_size'] == 28 else conf['model_kind']
         self.dis_features=[]
+        self.kernel = (conf['kernel'], conf['kernel'])
 
 
     def get_discriminator_model(self):
@@ -187,12 +167,23 @@ class Models():
             #model.add(SigmoidLayer())
 
         elif self.model_kind == 3:
-            model.add(tf.keras.layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
-                                             input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
+            if dconf['strided_conv']:
+                model.add(tf.keras.layers.Conv2D(conf['max_features']//2, self.kernel, strides=(2, 2), padding='same',
+                                                 input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
+            else:
+                model.add(tf.keras.layers.Conv2D(conf['max_features']//2, self.kernel, strides=(1, 1), padding='same',
+                                                 input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
+                model.add(tf.keras.layers.MaxPool2D())
             model.add(tf.keras.layers.LeakyReLU())
             model.add(tf.keras.layers.Dropout(dconf['dropout']))
 
-            model.add(tf.keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same', use_bias=dconf['use_bias']))
+            if dconf['strided_conv']:
+                model.add(tf.keras.layers.Conv2D(conf['max_features'], self.kernel, strides=(2, 2),
+                                                 padding='same', use_bias=dconf['use_bias']))
+            else:
+                model.add(tf.keras.layers.Conv2D(conf['max_features'], self.kernel, strides=(1, 1), padding='same',
+                                                 input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
+                model.add(tf.keras.layers.MaxPool2D())
             model.add(tf.keras.layers.LeakyReLU())
             model.add(tf.keras.layers.Dropout(dconf['dropout']))
 
@@ -220,7 +211,7 @@ class Models():
                     if i == conf['num_convs_per_res'] - 1 and res >= conf['image_size']:
                         features = conf['image_channels']
                     if i == conf['num_convs_per_res']-1 and not gconf['transp_conv']:
-                        model.add(Upscale2D(factor=2))
+                        model.add(tf.keras.layers.UpSampling2D())
                     if i == conf['num_convs_per_res']-1 and gconf['transp_conv']:
                         model.add(tf.keras.layers.Conv2DTranspose(features, (conf['kernel'], conf['kernel']),
                                                          padding='same', strides=2, use_bias=gconf['use_bias']))
@@ -242,7 +233,6 @@ class Models():
                     res = 125
 
         elif self.model_kind == 2:
-            model = tf.keras.Sequential(name='gen')
             res = conf['min_res']
             model.add(tf.keras.layers.Dense(res*res*self.dis_features[-1], use_bias=False, input_shape=(gconf['input_neurons'],)))
             model.add(tf.keras.layers.BatchNormalization())
@@ -272,32 +262,28 @@ class Models():
             model.add(tf.keras.layers.LeakyReLU())
 
             model.add(tf.keras.layers.Reshape((7, 7, 256)))
-            assert model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
 
-            model.add(tf.keras.layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
-            assert model.output_shape == (None, 7, 7, 128)
+            model.add(tf.keras.layers.Conv2DTranspose(conf['max_features'], self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.LeakyReLU())
 
             if gconf['transp_conv']:
-                model.add(tf.keras.layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=gconf['use_bias']))
+                model.add(tf.keras.layers.Conv2DTranspose(conf['max_features']//2, self.kernel, strides=(2, 2), padding='same', use_bias=gconf['use_bias']))
             else:
-                model.add(Upscale2D(factor=2))
-                model.add(tf.keras.layers.Conv2D(64, (5, 5), strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
-            assert model.output_shape == (None, 14, 14, 64)
+                model.add(tf.keras.layers.UpSampling2D())
+                model.add(tf.keras.layers.Conv2D(conf['max_features']//2, self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.LeakyReLU())
 
             if gconf['transp_conv']:
-                model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same',
+                model.add(tf.keras.layers.Conv2DTranspose(1, self.kernel, strides=(2, 2), padding='same',
                                                           use_bias=gconf['use_bias']))
             else:
-                model.add(Upscale2D(factor=2))
-                model.add(tf.keras.layers.Conv2D(1, (5, 5), strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
+                model.add(tf.keras.layers.UpSampling2D())
+                model.add(tf.keras.layers.Conv2D(1, self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             if conf['vmin'] == 0 and conf['vmax'] == 1:
                 model.add(SigmoidLayer())
             elif conf['vmin'] == -1 and conf['vmax'] == 1:
                 model.add(TanhLayer())
-            assert model.output_shape == (None, 28, 28, 1)
 
         return model
