@@ -8,7 +8,7 @@ period_to_save_cp: 5
 num_epochs: 400
 batch_size: 100
 lr: 0.0001
-lr_decay: 1/200  # experiment
+lr_decay: 0.005  # experiment
 gan_loss: Default
 val_model_cp: 3convs/cp-0137.ckpt
 jitter_padding: 2  # randomly translate input batch by padding black pixels. Use multiple of 2.
@@ -25,7 +25,7 @@ min_res: 4
 lrelu_alpha: 0.2
 weight_reg_kind: l2
 weight_reg_factor: 0
-ratio_gen_dis: 3  # 1 in tf DCGAN
+ratio_gen_dis: 1  # 1 in tf DCGAN
 # special generator and discriminator conf
 dis:
   strided_conv: True  # True in tf DCGAN
