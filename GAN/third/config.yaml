@@ -3,7 +3,7 @@ image_size: 28
 image_channels: 1
 vmin: -1
 vmax: 1
-percentage_train: 0.8
+percentage_train: 1
 period_to_save_cp: 5
 num_epochs: 400
 batch_size: 100
@@ -31,10 +31,10 @@ ratio_gen_dis: 3
 dis:
   strided_conv: True
   num_dense_layers: 2
-  dropout: 0.3
-  use_bias: False
+  dropout: 0.3  # 0.3 in tf DCGAN
+  use_bias: True  # True in tf DCGAN
 
 gen:
-  transp_conv: False
-  use_bias: False
-  input_neurons: 100
+  transp_conv: False  # True in tf DCGAN
+  use_bias: False  # False in tf DCGAN
+  input_neurons: 100  # 100 in tf DCGAN

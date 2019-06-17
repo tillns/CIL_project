@@ -23,7 +23,7 @@ from random import shuffle
 from datetime import datetime
 from tensorflow.python.keras.engine import training_utils
 import cv2
-from Models import Models, FactorLayer, Padder, SigmoidLayer
+from Models import Models, FactorLayer, Padder, SigmoidLayer, get_pad
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # disables some annoying tensorflow warnings
 """### Set initial parameters"""
 
@@ -68,6 +68,10 @@ def transform(numpy_image_array):
 
 def detransform(numpy_image_array):
     return (numpy_image_array - vmin) / (vmax-vmin) * 255.0
+
+def jitter(numpy_image_array, total_padding):
+    return_array = get_pad(numpy_image_array, total_padding=total_padding, constant_values=vmin)
+    return return_array[:, total_padding//2:-total_padding//2, total_padding//2:-total_padding//2]
 
 
 try:
@@ -173,8 +177,8 @@ def alternative_gen_loss(generated_image, real_image):
     return tf.reduce_mean(tf.abs(generated_image - real_image))
 
 
-generator_optimizer = tf.keras.optimizers.Adam(conf['lr'])
-discriminator_optimizer = tf.keras.optimizers.Adam(conf['lr'])
+generator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr']/num_epochs)
+discriminator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr']/num_epochs)
 
 
 class CallbackList(object):
@@ -425,7 +429,7 @@ os.system(cp_command.format("config.yaml"))
 
 # We will reuse this seed overtime (so it's easier)
 # to visualize progress in the animated GIF)
-seed = tf.random.normal([batch_size, gconf['input_neurons']])
+seed = tf.random.normal([25, gconf['input_neurons']])
 
 # callbacks.set_params(batch_size, num_epochs, num_iterations, train_len, 1, do_validation, None,)  # not sure bout metrics=None
 callbacks.stop_training(False)
@@ -456,9 +460,10 @@ for epoch in range(num_epochs):
     np.random.shuffle(train_images)
     for iteration in range(num_train_it):
         x_ = train_images[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]
-        for i in range(2):
-            if randint(0, 1):
-                x_ = np.flip(x_, axis=i + 1)  # randomly flip x- and y-axis
+        x_ = jitter(x_, 2)
+        #for i in range(2):
+            #if randint(0, 1):
+                #x_ = np.flip(x_, axis=i + 1)  # randomly flip x- and y-axis
         if False:
             img_np3 = x_[0, :, :, 0]
             plt.imshow(img_np3, cmap='gray', vmin=0, vmax=1)

@@ -4,13 +4,14 @@ from random import randint
 """###Define some custom layers"""
 
 
-def get_pad(x, total_padding=0):
+def get_pad(x, total_padding=0, constant_values=0):
     if total_padding == 0:
         return x
     elif total_padding > 0:
         rand1 = randint(0, total_padding)
         rand2 = randint(0, total_padding)
-        return tf.pad(x, tf.constant([[0, 0], [rand1, total_padding - rand1], [rand2, total_padding - rand2], [0, 0]]))
+        return tf.pad(x, tf.constant([[0, 0], [rand1, total_padding - rand1], [rand2, total_padding - rand2], [0, 0]]),
+                      constant_values=constant_values)
     else:
         total_padding = abs(total_padding)
         rand1 = randint(0, total_padding)
@@ -186,15 +187,14 @@ class Models():
             #model.add(SigmoidLayer())
 
         elif self.model_kind == 3:
-            model = tf.keras.Sequential()
             model.add(tf.keras.layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
-                                             input_shape=[28, 28, 1]))
+                                             input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
             model.add(tf.keras.layers.LeakyReLU())
-            model.add(tf.keras.layers.Dropout(0.3))
+            model.add(tf.keras.layers.Dropout(dconf['dropout']))
 
-            model.add(tf.keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'))
+            model.add(tf.keras.layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same', use_bias=dconf['use_bias']))
             model.add(tf.keras.layers.LeakyReLU())
-            model.add(tf.keras.layers.Dropout(0.3))
+            model.add(tf.keras.layers.Dropout(dconf['dropout']))
 
             model.add(tf.keras.layers.Flatten())
             model.add(tf.keras.layers.Dense(1))
@@ -267,25 +267,37 @@ class Models():
                     model.add(Padder(padding=-3))
 
         elif self.model_kind == 3:
-            model.add(tf.keras.layers.Dense(7 * 7 * 256, use_bias=False, input_shape=(100,)))
+            model.add(tf.keras.layers.Dense(7 * 7 * 256, use_bias=gconf['use_bias'], input_shape=(gconf['input_neurons'],)))
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.LeakyReLU())
 
             model.add(tf.keras.layers.Reshape((7, 7, 256)))
             assert model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
 
-            model.add(tf.keras.layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+            model.add(tf.keras.layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             assert model.output_shape == (None, 7, 7, 128)
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.LeakyReLU())
 
-            model.add(tf.keras.layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+            if gconf['transp_conv']:
+                model.add(tf.keras.layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=gconf['use_bias']))
+            else:
+                model.add(Upscale2D(factor=2))
+                model.add(tf.keras.layers.Conv2D(64, (5, 5), strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             assert model.output_shape == (None, 14, 14, 64)
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.LeakyReLU())
 
-            model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same',
-                                                      use_bias=False, activation='tanh'))
+            if gconf['transp_conv']:
+                model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same',
+                                                          use_bias=gconf['use_bias']))
+            else:
+                model.add(Upscale2D(factor=2))
+                model.add(tf.keras.layers.Conv2D(1, (5, 5), strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
+            if conf['vmin'] == 0 and conf['vmax'] == 1:
+                model.add(SigmoidLayer())
+            elif conf['vmin'] == -1 and conf['vmax'] == 1:
+                model.add(TanhLayer())
             assert model.output_shape == (None, 28, 28, 1)
 
         return model
