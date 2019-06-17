@@ -177,8 +177,8 @@ def alternative_gen_loss(generated_image, real_image):
     return tf.reduce_mean(tf.abs(generated_image - real_image))
 
 
-generator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr']/num_epochs)
-discriminator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr']/num_epochs)
+generator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr_decay'])
+discriminator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr_decay'])
 
 
 class CallbackList(object):
@@ -460,7 +460,7 @@ for epoch in range(num_epochs):
     np.random.shuffle(train_images)
     for iteration in range(num_train_it):
         x_ = train_images[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]
-        x_ = jitter(x_, 2)
+        x_ = jitter(x_, conf['jitter_padding'])
         #for i in range(2):
             #if randint(0, 1):
                 #x_ = np.flip(x_, axis=i + 1)  # randomly flip x- and y-axis

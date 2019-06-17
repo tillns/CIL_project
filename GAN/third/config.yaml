@@ -8,11 +8,13 @@ period_to_save_cp: 5
 num_epochs: 400
 batch_size: 100
 lr: 0.0001
+lr_decay: 1/200  # experiment
 train_loss_type: MSE  # CE, MSE or MAE
 val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
 gan_loss: Default
 rot_range: 0
 val_model_cp: 3convs/cp-0137.ckpt
+jitter_padding: 2  # randomly translate input batch by padding black pixels. Use multiple of 2.
 
 # general model conf
 
