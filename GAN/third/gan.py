@@ -407,10 +407,6 @@ discriminator = myModels.get_discriminator_model()
 generator = myModels.get_generator_model()
 callbacks.set_model([discriminator, generator])
 callbacks.set_params(1)
-checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
-                                 discriminator_optimizer=discriminator_optimizer,
-                                 generator=generator,
-                                 discriminator=discriminator)
 progbar = training_utils.get_progbar(generator, 'steps')
 progbar.params = callbacks.get_params()
 progbar.params['verbose'] = 1
@@ -448,6 +444,12 @@ if do_validation:
     val_model.load_weights(val_cp_path)
     val_model.summary()
 
+json_config = generator.to_json()
+with open(os.path.join(checkpoint_dir, 'gen_config.json'), 'w') as json_file:
+    json_file.write(json_config)
+json_config = discriminator.to_json()
+with open(os.path.join(checkpoint_dir, 'dis_config.json'), 'w') as json_file:
+    json_file.write(json_config)
 for epoch in range(num_epochs):
     gen_losses = 0
     dis_losses = 0
@@ -496,8 +498,9 @@ for epoch in range(num_epochs):
     if (epoch + 1) % conf['period_to_save_cp'] == 0:
 
         try:
-            checkpoint_path = os.path.join(checkpoint_dir, "cp_epoch{}".format(epoch + 1))
-            checkpoint.save(checkpoint_path)
+            checkpoint_path = os.path.join(checkpoint_dir, "cp_{}_epoch{}".format("{}", epoch + 1))
+            generator.save_weights(checkpoint_path.format("gen"))
+            discriminator.save_weights(checkpoint_path.format("dis"))
             print("Checkpoint saved as: {}".format(checkpoint_path))
         except:
             print("Something went wrong with saving the checkpoint")
