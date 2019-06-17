@@ -174,7 +174,7 @@ class Models():
                 model.add(tf.keras.layers.Conv2D(conf['max_features']//2, self.kernel, strides=(1, 1), padding='same',
                                                  input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
                 model.add(tf.keras.layers.MaxPool2D())
-            model.add(tf.keras.layers.LeakyReLU())
+            model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
             model.add(tf.keras.layers.Dropout(dconf['dropout']))
 
             if dconf['strided_conv']:
@@ -184,7 +184,7 @@ class Models():
                 model.add(tf.keras.layers.Conv2D(conf['max_features'], self.kernel, strides=(1, 1), padding='same',
                                                  input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
                 model.add(tf.keras.layers.MaxPool2D())
-            model.add(tf.keras.layers.LeakyReLU())
+            model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
             model.add(tf.keras.layers.Dropout(dconf['dropout']))
 
             model.add(tf.keras.layers.Flatten())
@@ -259,13 +259,13 @@ class Models():
         elif self.model_kind == 3:
             model.add(tf.keras.layers.Dense(7 * 7 * 256, use_bias=gconf['use_bias'], input_shape=(gconf['input_neurons'],)))
             model.add(tf.keras.layers.BatchNormalization())
-            model.add(tf.keras.layers.LeakyReLU())
+            model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
 
             model.add(tf.keras.layers.Reshape((7, 7, 256)))
 
             model.add(tf.keras.layers.Conv2DTranspose(conf['max_features'], self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             model.add(tf.keras.layers.BatchNormalization())
-            model.add(tf.keras.layers.LeakyReLU())
+            model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
 
             if gconf['transp_conv']:
                 model.add(tf.keras.layers.Conv2DTranspose(conf['max_features']//2, self.kernel, strides=(2, 2), padding='same', use_bias=gconf['use_bias']))
@@ -273,7 +273,7 @@ class Models():
                 model.add(tf.keras.layers.UpSampling2D())
                 model.add(tf.keras.layers.Conv2D(conf['max_features']//2, self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             model.add(tf.keras.layers.BatchNormalization())
-            model.add(tf.keras.layers.LeakyReLU())
+            model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
 
             if gconf['transp_conv']:
                 model.add(tf.keras.layers.Conv2DTranspose(1, self.kernel, strides=(2, 2), padding='same',

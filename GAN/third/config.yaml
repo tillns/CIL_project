@@ -2,25 +2,22 @@
 image_size: 28
 image_channels: 1
 vmin: -1
-vmax: 1
-percentage_train: 1
+vmax: 1  # use either -1 and 1 or 0 and 1
+percentage_train: 1  # validation doesn't work with star patches yet
 period_to_save_cp: 5
 num_epochs: 400
 batch_size: 100
 lr: 0.0001
 lr_decay: 1/200  # experiment
-train_loss_type: MSE  # CE, MSE or MAE
-val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
 gan_loss: Default
-rot_range: 0
 val_model_cp: 3convs/cp-0137.ckpt
 jitter_padding: 2  # randomly translate input batch by padding black pixels. Use multiple of 2.
 
 # general model conf
 
-model_kind: 2
+model_kind: 3
 num_convs_per_res: 1
-kernel: 5
+kernel: 5  # 5 in tf DCGAN
 features: 4
 max_features: 64  # 128 in tf DCGAN
 norm_type: batch
@@ -28,7 +25,7 @@ min_res: 4
 lrelu_alpha: 0.2
 weight_reg_kind: l2
 weight_reg_factor: 0
-ratio_gen_dis: 3
+ratio_gen_dis: 3  # 1 in tf DCGAN
 # special generator and discriminator conf
 dis:
   strided_conv: True  # True in tf DCGAN
