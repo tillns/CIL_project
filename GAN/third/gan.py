@@ -165,7 +165,9 @@ class CallbackList(object):
         dis_metrics = ['dis_loss']
         if do_validation:
             dis_metrics.append('dis_val_loss')
+            dis_metrics.append('min_dis_val_loss')
             dis_metrics.append('gen_val_loss')
+            dis_metrics.append('min_gen_val_loss')
         self.params = {'dis': {
             'batch_size': batch_size,
             'epochs': num_epochs,
@@ -397,6 +399,8 @@ progbar.on_train_begin()
 # print("Graph: {}".format(tf.keras.backend.get_session().graph))
 
 if do_validation:
+    min_dis_val_loss = 10000
+    min_gen_val_loss = 10000
     if conf['val_model_kind'] == "nn":
         val_cp_path = os.path.join(classifier_cp_dir, conf['nn_val_model_path'])
         val_model_path = os.path.join("/".join(val_cp_path.split("/")[:-1]), "model_config.json")
@@ -480,11 +484,19 @@ for epoch in range(num_epochs):
                 dis_val_loss += discriminator_loss(real_output, None)
 
         callbacks._call_end_hook('test')
-        epoch_logs['dis']['dis_val_loss'] = dis_val_loss/num_test_it
+        dis_val_loss /= num_test_it
+        min_dis_val_loss = min(min_dis_val_loss, dis_val_loss)
+        save_new_cp = min_gen_val_loss > gen_val_loss
+        min_gen_val_loss = min(min_gen_val_loss, gen_val_loss)
+        epoch_logs['dis']['dis_val_loss'] = dis_val_loss
+        epoch_logs['dis']['min_dis_val_loss'] = min_dis_val_loss
         epoch_logs['gen']['gen_val_loss'] = gen_val_loss
+        epoch_logs['gen']['min_gen_val_loss'] = min_gen_val_loss
+
+
 
     # Save the model every few epochs
-    if (epoch + 1) % conf['period_to_save_cp'] == 0:
+    if (not do_validation and (epoch + 1) % conf['period_to_save_cp'] == 0) or (do_validation and save_new_cp):
 
         try:
             checkpoint_path = os.path.join(checkpoint_dir, "cp_{}_epoch{}".format("{}", epoch + 1))
