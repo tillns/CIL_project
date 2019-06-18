@@ -99,8 +99,8 @@ class Padder(tf.keras.layers.Layer):
 class Models():
     def __init__(self, conf):
         self.conf = conf
-        self.model_kind = 3 if conf['image_size'] == 28 else conf['model_kind']
-        self.dis_features=[]
+        self.model_kind = conf['model_kind']
+        self.dis_features = []
         self.kernel = (conf['kernel'], conf['kernel'])
 
 
@@ -189,6 +189,17 @@ class Models():
 
             model.add(tf.keras.layers.Flatten())
             model.add(tf.keras.layers.Dense(1))
+
+        elif self.model_kind == 4:
+            model.add(tf.keras.layers.InputLayer(input_shape=(28, 28, 1)))
+            model.add(tf.keras.layers.Flatten())
+            model.add(tf.keras.layers.Dense(500, activation=None))
+            model.add(tf.keras.layers.ReLU())
+            model.add(tf.keras.layers.Dropout(0.2))
+            model.add(tf.keras.layers.BatchNormalization())
+            model.add(tf.keras.layers.Dense(1))
+            #model.add(SigmoidLayer())
+
         return model
 
     def get_generator_model(self):
@@ -281,6 +292,18 @@ class Models():
             else:
                 model.add(tf.keras.layers.UpSampling2D())
                 model.add(tf.keras.layers.Conv2D(1, self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
+            if conf['vmin'] == 0 and conf['vmax'] == 1:
+                model.add(SigmoidLayer())
+            elif conf['vmin'] == -1 and conf['vmax'] == 1:
+                model.add(TanhLayer())
+
+        elif self.model_kind == 4:
+            model.add(tf.keras.layers.InputLayer(input_shape=(gconf['input_neurons'],)))
+            model.add(tf.keras.layers.Dense(500))
+            model.add(tf.keras.layers.ReLU())
+            model.add(tf.keras.layers.BatchNormalization())
+            model.add(tf.keras.layers.Dense(28 * 28 * 1))
+            model.add(tf.keras.layers.Reshape(target_shape=(28, 28, 1)))
             if conf['vmin'] == 0 and conf['vmax'] == 1:
                 model.add(SigmoidLayer())
             elif conf['vmin'] == -1 and conf['vmax'] == 1:

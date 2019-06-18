@@ -7,10 +7,50 @@ import argparse
 import json
 import yaml
 from Models import TanhLayer, SigmoidLayer
+from random import gauss, randint
+import matplotlib.pyplot as plt
+
+image_channels = 1
+image_size = 1000
+
+def overlap(x, y, stars_pos_list, dist_stars):
+    for (xi, yi) in stars_pos_list:
+        if xi <= x < xi+dist_stars and yi <= y < yi+dist_stars:
+            return True
+    return False
+
+def round_pos_int(some_decimal):
+    if some_decimal < 0:
+        return 0
+    if some_decimal - int(some_decimal) < 0.5:
+        return int(some_decimal)
+    return int(some_decimal) + 1
 
 
-def create_complete_images(gen_model):
-    return True
+def create_complete_images(gen_model, vmin=0, num_images_to_create=2):
+    num_stars_per_pic = []
+    for i in range(num_images_to_create):
+        num_stars_per_pic.append(round_pos_int(gauss(12.32, 4.04103)))
+
+    star_patch_size = gen_model.output.shape[1]
+    image_tensor = np.zeros((num_images_to_create, image_size+star_patch_size, image_size+star_patch_size,
+                             image_channels))
+    image_tensor = image_tensor + vmin
+    for num_img, num_stars in enumerate(num_stars_per_pic):
+        random_latent = tf.random.normal([num_stars, gen_model.input.shape[1]])
+        star_imgs = gen_model(random_latent).numpy()
+        star_pos_list = []
+        for i in range(num_stars):
+            while True:
+                x = randint(0, image_size-1)
+                y = randint(0, image_size-1)
+                if not overlap(x, y, star_pos_list, dist_stars=star_patch_size):
+                    break
+            star_pos_list.append((x, y))
+            image_tensor[num_img, x:x+star_patch_size, y:y+star_patch_size] = star_imgs[i]
+
+    return image_tensor[:, star_patch_size//2:star_patch_size//2+image_size,
+                        star_patch_size//2:star_patch_size//2+image_size]
 
 
 if __name__ == '__main__':
@@ -30,4 +70,8 @@ if __name__ == '__main__':
     custom_objects = {'TanhLayer': TanhLayer} if conf['vmin'] == -1 else {'Sigmoidayer': SigmoidLayer}
     gen_model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
     gen_model.load_weights(args.checkpoint_path[:-len('.data-00000-of-00001')])
-    create_complete_images(gen_model)
+    image_tensor = create_complete_images(gen_model, vmin=conf['vmin'])
+    for num_img in range(image_tensor.shape[0]):
+        img_np2 = image_tensor[num_img, :, :, 0]
+        plt.imshow(img_np2, cmap='gray', vmin=conf['vmin'], vmax=conf['vmax'])
+        plt.show()

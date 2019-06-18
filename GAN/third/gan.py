@@ -14,7 +14,6 @@ import math
 from IPython import display
 import matplotlib
 # matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from random import randint
 import sys
 from collections import OrderedDict
