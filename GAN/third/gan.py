@@ -23,6 +23,8 @@ from datetime import datetime
 from tensorflow.python.keras.engine import training_utils
 import cv2
 from Models import Models, FactorLayer, Padder, SigmoidLayer, get_pad
+from create_complete_images import create_complete_images
+import joblib
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # disables some annoying tensorflow warnings
 """### Set initial parameters"""
 
@@ -106,68 +108,29 @@ def load_dataset():
         test_images = None
 
 
-# wgangp losses. I crossed out the label penalty terms and adjusted the other stuff
-# to tf 2.0 and left out autosummary (for tensorboard) stuff. 
-# I think the label penalty was introduced in
-# https://arxiv.org/pdf/1610.09585.pdf the ac-gan paper. For multi-class generation,
-# this term is useful, so it's probably not necessary in this work
-def G_wgangp(labels, fake_scores_out,
-             cond_weight=1.0):  # Weight of the conditioning term.
-
-    return -cond_weight * tf.reduce_mean(fake_scores_out)
-
-
-def D_wgangp(reals, fake_images_out, real_scores_out, fake_scores_out, discriminator,
-             wgan_lambda=10.0,  # Weight for the gradient penalty term.
-             wgan_epsilon=0.001,  # Weight for the epsilon term, \epsilon_{drift}.
-             wgan_target=1.0,  # Target value for gradient magnitudes.
-             cond_weight=1.0):  # Weight of the conditioning terms.
-
-    loss = tf.reduce_mean(fake_scores_out) - tf.reduce_mean(real_scores_out)  # this is the normal WGAN loss
-
-    with tf.name_scope('GradientPenalty'):
-        alpha = tf.random.uniform(shape=[reals.shape[0]], minval=0., maxval=1.)
-        differences = fake_images_out - reals
-        interpolates = reals + (differences.mul(alpha, axis=0))
-        with tf.GradientTape() as t:
-            t.watch(interpolates)
-            pred = discriminator(interpolates)
-        grad = t.gradient(pred, interpolates)
-        norm = tf.norm(tf.reshape(grad, [tf.shape(grad)[0], -1]), axis=1)
-        gradient_penalty = tf.reduce_mean((norm - 1.) ** 2)
-    loss += gradient_penalty * (wgan_lambda / (wgan_target ** 2))  # this is the gradient penalty term
-
-    with tf.name_scope('EpsilonPenalty'):
-        epsilon_penalty = tf.reduce_mean(tf.square(real_scores_out))
-    loss += epsilon_penalty * wgan_epsilon  # this is the small additional loss mentioned to avoid drifts from zero
-
-    return loss
-
-
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 
-def discriminator_loss(D_real_logits, D_fake_logits, x, generated_image, discriminator):
-    label_zero = tf.zeros([x.shape[0], 1])
-    label_one = tf.ones([x.shape[0], 1])
+def discriminator_loss(D_real_logits, D_fake_logits):
+    label_zero = tf.zeros([D_real_logits.shape[0], 1])
+    label_one = tf.ones([D_real_logits.shape[0], 1])
 
     if gan_loss == 'lsgan':
-        return tf.reduce_mean(tf.square(D_fake_logits - label_zero)) + tf.reduce_mean(
-            tf.square(D_real_logits - label_one))
-    elif gan_loss == 'wgan_gp':
-        return D_wgangp(x, generated_image, D_real_logits, D_fake_logits, discriminator)
+        loss = tf.reduce_mean(tf.square(D_real_logits - label_one))
+        if D_fake_logits is not None:
+            loss = (loss + tf.reduce_mean(tf.square(D_fake_logits - label_zero)))/2
+        return loss
     else:
-        real_loss = cross_entropy(label_one, D_real_logits)
-        fake_loss = cross_entropy(label_zero, D_fake_logits)
-        return (real_loss + fake_loss)/2
+        loss = cross_entropy(label_one, D_real_logits)
+        if D_fake_logits is not None:
+            loss = (loss + cross_entropy(label_zero, D_fake_logits))/2
+        return loss
 
 
 def generator_loss(D_fake_logits):
     label_one = tf.ones([D_fake_logits.shape[0], 1])
     if gan_loss == 'lsgan':
         return tf.reduce_mean(tf.square(D_fake_logits - label_one))
-    elif gan_loss == 'wgan_gp':
-        return G_wgangp(label_one, D_fake_logits)
     else:
         return cross_entropy(label_one, D_fake_logits)
 
@@ -368,7 +331,7 @@ def train_step(images, generator, discriminator, iteration, progbar):
 
             if gen_step == ratio_gen_dis-1:
                 real_output = discriminator(images, training=True)
-                dis_loss = discriminator_loss(real_output, fake_output, images, generated_images, discriminator)
+                dis_loss = discriminator_loss(real_output, fake_output)
                 batch_logs['dis']['dis_loss'] = dis_loss
 
         gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
@@ -434,14 +397,17 @@ progbar.on_train_begin()
 # print("Graph: {}".format(tf.keras.backend.get_session().graph))
 
 if do_validation:
-    val_cp_path = os.path.join(classifier_cp_dir, conf['val_model_cp'])
-    val_model_path = os.path.join("/".join(val_cp_path.split("/")[:-1]), "model_config.json")
-    with open(val_model_path) as json_file:
-        json_config = json_file.read()
-    custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer}
-    val_model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
-    val_model.load_weights(val_cp_path)
-    val_model.summary()
+    if conf['val_model_kind'] == "nn":
+        val_cp_path = os.path.join(classifier_cp_dir, conf['nn_val_model_path'])
+        val_model_path = os.path.join("/".join(val_cp_path.split("/")[:-1]), "model_config.json")
+        with open(val_model_path) as json_file:
+            json_config = json_file.read()
+        custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer}
+        val_model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
+        val_model.load_weights(val_cp_path)
+        val_model.summary()
+    else:
+        val_model = joblib.load(conf['rf_val_model_path'])
 
 json_config = generator.to_json()
 with open(os.path.join(checkpoint_dir, 'gen_config.json'), 'w') as json_file:
@@ -480,15 +446,39 @@ for epoch in range(num_epochs):
         callbacks._call_begin_hook('test')
         dis_val_loss = 0
         gen_val_loss = 0
+        if image_size == 28:
+            np_img_tensor = create_complete_images(generator, conf['vmin'], conf['num_val_images'])
+            if conf['val_model_kind'] == "rf":
+                hist_list = []
+                for i in range(conf['num_val_images']):
+                    hist_list.append(np.histogram(np_img_tensor[i], bins=10)[0])  # todo: maybe make bins more general
+                hist_tensor = np.stack(hist_list)
+                score = val_model.predict(hist_tensor)
+            else:
+                reduced_imgs = []
+                for i in range(conf['num_val_images']):
+                    reduced_imgs.append(Image.fromarray(np_img_tensor[i, :, :, 0]).
+                                        resize((val_model.input.shape[1], val_model.input.shape[2])))
+                np_reduced_imgs = np.stack(reduced_imgs)
+                np_reduced_imgs = np.expand_dims(np_reduced_imgs, axis=3)
+                score = val_model(np_reduced_imgs)
+
+            label_eight = np.ones((10, 1))*8
+            gen_val_loss = tf.reduce_mean(tf.square(score-label_eight))
+
         for iteration in range(num_test_it):
             x_ = test_images[iteration*batch_size:min(test_len, (iteration+1)*batch_size)]
             real_output = discriminator(x_, training=False)
-            noise = tf.random.normal([batch_size, gconf['input_neurons']])
-            generated_images = generator(noise, training=False)
-            fake_output = discriminator(generated_images, training=False)
-            val_output = val_model(generated_images, training=False)/8
-            gen_val_loss += generator_loss(val_output)
-            dis_val_loss += discriminator_loss(real_output, fake_output, x_, generated_images, discriminator)
+            if image_size == 125:
+                noise = tf.random.normal([batch_size, gconf['input_neurons']])
+                generated_images = generator(noise, training=False)
+                fake_output = discriminator(generated_images, training=False)
+                val_output = val_model(generated_images, training=False)/8
+                gen_val_loss += generator_loss(val_output)
+                dis_val_loss += discriminator_loss(real_output, fake_output)
+            else:
+                dis_val_loss += discriminator_loss(real_output, None)
+
         callbacks._call_end_hook('test')
         epoch_logs['dis']['dis_val_loss'] = dis_val_loss/num_test_it
         epoch_logs['gen']['gen_val_loss'] = gen_val_loss/num_test_it
