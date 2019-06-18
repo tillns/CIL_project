@@ -1,6 +1,6 @@
 """Variational Autoencoder Train
 
-This file contains a class to train the variational autoencoder model.
+This file contains functions to train the variational autoencoder model.
 
 """
 
@@ -12,136 +12,167 @@ from star_vae_utils import load_train_test_dataset
 
 # !pip install -q tensorflow-gpu==2.0.0-alpha0
 import tensorflow as tf
-
 import numpy as np
 
+from argparse import ArgumentParser
 
-class StarVAETrainer():
+
+# File paths
+
+parser_vae = ArgumentParser()
+
+parser_vae.add_argument("--path_csv", default="/cluster/home/hannepfa/cosmology_aux_data/labeled.csv", type=str)
+parser_vae.add_argument("--dir_labeled_images", default="/cluster/home/hannepfa/cosmology_aux_data/labeled/", type=str)
+parser_vae.add_argument("--path_ckpt", default="/cluster/home/hannepfa/checkpoints_vae/stable/checkpoint", type=str)
+parser_vae.add_argument("--path_ckpt_stable", default="/cluster/home/hannepfa/checkpoints_vae/tmp/checkpoint", type=str)
+parser_vae.add_argument("--frac_train", default=0.9, type=float)
+
+# Hyperparameters
+
+_optimizer = tf.keras.optimizers.Adadelta(lr=1)
+
+_epochs = 60
+_batch_size = 100
+        
+_latent_dim = 16 # NOTE: dimension of latent space (bad quality if too small)
+        
+_c1 = 20.0
+_c2 = 0.5
+
+
+# Metrics
+
+_KL_div_mean = tf.keras.metrics.Mean('KL_div_mean', dtype=tf.float32)
+_reconstr_error_mean = tf.keras.metrics.Mean('reconstr_error_mean', dtype=tf.float32)
+
+
+def _compute_annealing_factor(curr_epoch, num_epochs):
+  
+    frac = float(curr_epoch) / float(num_epochs)
+  
+    return 1.0 / (1.0 + tf.exp(_c1 * (frac - _c2)))
+        
+        
+def _compute_KL_divergence(mean, logvar, raxis=1):
     
-    def __init__(self, latent_dim):
-        super(VAETrainer, self).__init__()
+    return tf.reduce_sum(-0.5 * (1 + logvar - mean ** 2 - tf.exp(logvar)), axis=raxis)
+    
+    
+def _compute_loss(model, x, annealing_factor):
+    
+    mean, logvar = model.encode(x)
+    
+    # KL divergence
+    KL_div = _compute_KL_divergence(mean, logvar)
+
+    # reconstruction error
+    z = model.reparameterize(mean, logvar)
+  
+    x_logit = model.decode(z)
+    
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
+    logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    
+    
+    # NOTE: update metrics
+    _KL_div_mean.update_state(KL_div)
+    _reconstr_error_mean.update_state(logpx_z)
+  
+
+    # NOTE: negation causes ascent -> descent
+    # NOTE: reduce mean is expectation over batch of data
+    return -tf.reduce_mean(logpx_z - annealing_factor * KL_div)
+
+
+def _compute_gradients(model, x, annealing):
+  
+    with tf.GradientTape() as tape:
+        loss = _compute_loss(model, x, annealing)
+  
+    return tape.gradient(loss, model.trainable_variables)
+
+
+def _apply_gradients(optimizer, gradients, variables):
+    
+    optimizer.apply_gradients(zip(gradients, variables))
+
+    
+def train_star_vae(path_csv, path_labeled_images, frac_train, model):
+        
+    KL_div_train = [] 
+    reconstr_error_train = []
+    
+    KL_div_test = [] 
+    reconstr_error_test = []    
+        
+        
+    train_dataset, test_dataset = load_train_test_dataset(
+        path_csv, path_labeled_images, frac_train, _batch_size)
+            
+            
+    for epoch in range(1, _epochs + 1):
+            
+        annealing_factor = _compute_annealing_factor(epoch, _epochs)
+            
+        
+        for x in train_dataset: # train dataset
+    
+            gradients = _compute_gradients(model, x, annealing_factor)
+            _apply_gradients(_optimizer, gradients, model.trainable_variables)
+            
+        KL_div_train.append(_KL_div_mean.result())
+        reconstr_error_train.append(_reconstr_error_mean.result())
+            
+        # NOTE: reset metrics
+        _KL_div_mean.reset_states()
+        _reconstr_error_mean.reset_states()
+        
+        
+        for x in test_dataset: # test dataset
                 
-        # Hyperparameters
-        self.optimizer = tf.keras.optimizers.Adadelta(lr=1)
+            _compute_loss(model, x, annealing_factor)
         
-        self.epochs = 60
-        self.batch_size = 100
-        
-        self.latent_dim = 16 # NOTE: dimension of latent space (bad quality if too small)
-        
-        self.c1 = 20.0
-        self.c2 = 0.5
-        
-        # Model
-        self.model = StarVAE(self.latent_dim)
-        
-        # TensorBoard summaries
-        self.KL_div_mean = tf.keras.metrics.Mean('KL_div_mean', dtype=tf.float32)
-        self.reconstr_error_mean = tf.keras.metrics.Mean('reconstr_error_mean', dtype=tf.float32)
-        
-        
-    def _compute_gradients(model, x, annealing):
-  
-        with tf.GradientTape() as tape:
-            loss = compute_loss(model, x, annealing)
-  
-        return tape.gradient(loss, model.trainable_variables)
-
-
-    def _apply_gradients(optimizer, gradients, variables):
-  
-        optimizer.apply_gradients(zip(gradients, variables))
-    
-    
-    def _compute_annealing_factor(curr_epoch, num_epochs):
-  
-        frac = float(curr_epoch) / float(num_epochs)
-  
-        return 1.0 / (1.0 + tf.exp(-self.c1 * (frac - self.c2)))
-        
-        
-    def _compute_KL_divergence(mean, logvar, raxis=1):
-    
-        return tf.reduce_sum(-0.5 * (1 + logvar - mean ** 2 - tf.exp(logvar)), axis=raxis)
-    
-    
-    def _compute_loss(self, model, x, annealing_factor):
-    
-        mean, logvar = model.encode(x)
-    
-        # KL divergence
-        KL_div = _compute_KL_divergence(mean, logvar)
-
-        # reconstruction error
-        z = model.reparameterize(mean, logvar)
-  
-        x_logit = model.decode(z)
-    
-        cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
-        logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    
-    
-        # NOTE: TensorBoard summaries
-        self.KL_div_mean(KL_div)
-        self.reconstr_error_mean(logpx_z)
-  
-
-        # NOTE: negation causes ascent -> descent
-        # NOTE: reduce mean is expectation over batch of data
-        return -tf.reduce_mean(logpx_z - annealing_factor * KL_div)
-    
-    
-    def train(self, path_csv, path_labeled_images, frac_train):
-        
-        KL_div_train = []; reconstr_error_train = []
-        KL_div_test = []; reconstr_error_test = []
-        
-        
-        train_dataset, test_dataset = 
-            _load_train_test_dataset(path_csv, path_labeled_images, frac_train, self.batch_size)
+        KL_div_test.append(_KL_div_mean.result())
+        reconstr_error_test.append(_reconstr_error_mean.result())
             
-            
-        for epoch in range(1, self.epochs + 1):
-            
-            annealing_factor = _compute_annealing_factor(epoch, self.epochs)
-            
-            for x in train_dataset:
-    
-                gradients = _compute_gradients(self.model, x, annealing_factor)
-                _apply_gradients(self.optimizer, gradients, self.model.trainable_variables)
-            
-            # store losses
-            KL_div_train.append(self.KL_div_mean.result())
-            reconstr_error_train.append(self.reconstr_error_mean.result())
-            
-            # reset metrics
-            self.KL_div_mean.reset_states()
-            self.reconstr_error_mean.reset_states()
-            
-            for x in test_dataset:
-                
-                compute_loss(self.model, x, annealing_factor)
-            
-            # store losses
-            KL_div_test.append(self.KL_div_mean.result())
-            reconstr_error_test.append(self.reconstr_error_mean.result())
-            
-            # reset metrics
-            self.KL_div_mean.reset_states()
-            self.reconstr_error_mean.reset_states()
+        # NOTE: reset metrics
+        _KL_div_mean.reset_states()
+        _reconstr_error_mean.reset_states()
             
             
     return KL_div_train, reconstr_error_train, KL_div_test, reconstr_error_test
             
             
-    def save_trained_model(self, path_ckpt):
-        self.model.save_weights(path_ckpt)
+def save_trained_model(model, path_ckpt):
+    
+    model.save_weights(path_ckpt)
         
         
-    def load_pretrained_model(self, path_ckpt):
-        self.model.load_weights(path_ckpt)
+def load_pretrained_model(model, path_ckpt):
+    
+    model.load_weights(path_ckpt)
         
               
-    def load_stable_pretrained_model(self, path_ckpt_stable):   
-        self.model.load_weights(path_ckpt_stable)
+def load_stable_pretrained_model(model, path_ckpt_stable):   
+    
+    model.load_weights(path_ckpt_stable)
+
+
+if __name__ == "__main__":
+    
+    arguments = parser_vae.parse_args()
+    
+    path_csv = arguments.path_csv
+    dir_labeled_images = arguments.dir_labeled_images
+    path_ckpt = arguments.path_ckpt
+    path_ckpt_stable = arguments.path_ckpt_stable
+    frac_train = arguments.frac_train
+    
+    
+    model = StarVAE(_latent_dim)
+        
+    train_star_vae(path_csv, dir_labeled_images, frac_train, model)
+    
+   
+
 
