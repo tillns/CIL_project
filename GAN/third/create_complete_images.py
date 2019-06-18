@@ -28,6 +28,17 @@ def round_pos_int(some_decimal):
         return int(some_decimal)
     return int(some_decimal) + 1
 
+def score_tensor(image_tensor):
+    hist_list = []
+    for i in range(image_tensor.shape[0]):
+        hist_list.append(np.histogram(image_tensor[i], bins=10)[0])
+    hist_tensor = np.stack(hist_list)
+    val_model = joblib.load(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"), "random_forest_10_0.9.sav"))
+    score = val_model.predict(hist_tensor)
+    label_eight = np.ones((image_tensor.shape[0], 1)) * 8
+    gen_val_loss = tf.reduce_mean(tf.square(score - label_eight))
+    print("MSE loss of generated images: {}".format(gen_val_loss))
+
 
 def create_complete_images(gen_model, vmin=0, num_images_to_create=100):
     num_stars_per_pic = []
@@ -73,15 +84,7 @@ if __name__ == '__main__':
     gen_model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
     gen_model.load_weights(args.checkpoint_path[:-len('.data-00000-of-00001')])
     image_tensor = create_complete_images(gen_model, vmin=conf['vmin'])
-    hist_list = []
-    for i in range(image_tensor.shape[0]):
-        hist_list.append(np.histogram(image_tensor[i], bins=10)[0])
-    hist_tensor = np.stack(hist_list)
-    val_model = joblib.load(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"), "random_forest_10_0.9.sav"))
-    score = val_model.predict(hist_tensor)
-    label_eight = np.ones((image_tensor.shape[0], 1)) * 8
-    gen_val_loss = tf.reduce_mean(tf.square(score - label_eight))
-    print("MSE loss of generated images: {}".format(gen_val_loss))
+
     if False:
         for num_img in range(image_tensor.shape[0]):
             img_np2 = image_tensor[num_img, :, :, 0]

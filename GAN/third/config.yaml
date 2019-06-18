@@ -22,18 +22,18 @@ model_kind: 3
 num_convs_per_res: 1
 kernel: 5  # 5 in tf DCGAN
 features: 4
-max_features: 64  # 128 in tf DCGAN
+max_features: 512  # 128 in tf DCGAN
 norm_type: batch
 min_res: 4
 lrelu_alpha: 0.2
 weight_reg_kind: l2
 weight_reg_factor: 0
-ratio_gen_dis: 2  # 1 in tf DCGAN
+ratio_gen_dis: 1  # 1 in tf DCGAN
 # special generator and discriminator conf
 dis:
   strided_conv: True  # True in tf DCGAN
   num_dense_layers: 2
-  dropout: 0.3  # 0.3 in tf DCGAN
+  dropout: 0  # 0.3 in tf DCGAN
   use_bias: True  # True in tf DCGAN
 
 gen:
