@@ -116,7 +116,7 @@ def get_train_and_test_data(numpy_data_directory, data_directory, num_features, 
 
     return train_features, train_labels, test_features, test_labels
 
-def get_query_data(numpy_data_directory, data_directory, num_features):
+def get_query_data(numpy_data_directory, data_directory, num_features, split_ratio, filetype='png'):
     """Gets the preprocessed query data
 
     If the data is not already preprocessed (i.e. stored in the numpy_data_directory),
@@ -147,7 +147,7 @@ def get_query_data(numpy_data_directory, data_directory, num_features):
     except:
         # if it doesn't work, recalculate the data and store it to disk
         print("\tcreate query image features...")
-        query_features, query_ids = _load_query_data(data_directory, num_features)
+        query_features, query_ids = _load_query_data(data_directory, num_features, filetype)
         _save_np_data(numpy_data_directory, query_features, _np_query_file_name(num_features))
         _save_np_data(numpy_data_directory, query_ids, _np_query_file_name(num_features, True))
 
@@ -207,7 +207,7 @@ def _preprocess_scored_data(data_directory, num_features, split_ratio):
 
     return train_features, train_labels, test_features, test_labels
 
-def _load_query_data(data_directory, num_features):
+def _load_query_data(data_directory, num_features, filetype='png'):
     """Loads the query image data
 
     The data is read from the data_directory, preprocessed and put into a feature matrix and a
@@ -232,11 +232,11 @@ def _load_query_data(data_directory, num_features):
 
     query_ids = np.array(image_ids, dtype=np.uint32)
     print("\t\tloading query images...")
-    query_features = _load_and_preprocess_images(os.path.join(data_directory, "query"), image_ids, num_features)
+    query_features = _load_and_preprocess_images(os.path.join(data_directory, "query"), image_ids, num_features, filetype)
 
     return query_features, query_ids
 
-def _load_and_preprocess_images(image_directory, image_ids, num_features):
+def _load_and_preprocess_images(image_directory, image_ids, num_features, filetype='png'):
     """Loads and preprocesses the image data
 
     Preprocessing is done by computing a histogram of the pixel values of the image where
@@ -264,9 +264,9 @@ def _load_and_preprocess_images(image_directory, image_ids, num_features):
         if (i+1) % 400 == 0:
             print("\t\t\t\t{} images loaded...".format(i+1))
 
-        image = PIL.Image.open(os.path.join(image_directory, "{}.png".format(id)))
+        image = PIL.Image.open(os.path.join(image_directory, "{}.{}".format(id, filetype)))
         np_image = np.array(image.getdata(), dtype=np.uint8)
-        image_features, _ = np.histogram(np_image, bins=num_features)
+        image_features, _ = np.histogram(np_image, bins=num_features, range=(0, 255))
         image_feature_matrix[i] = image_features
 
     print("\t\t\tfinished loading images!")

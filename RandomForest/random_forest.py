@@ -72,7 +72,7 @@ def create_query_file(arguments):
     split_ratio = arguments.split_ratio
 
     ml_model = joblib.load(_model_file_path(numpy_data_directory, num_features, split_ratio))
-    query_features, query_ids = get_query_data(numpy_data_directory, data_directory, num_features)
+    query_features, query_ids = get_query_data(numpy_data_directory, data_directory, num_features, split_ratio)
 
     print("Predicting query set...")
     query_predict = ml_model.predict(query_features)
