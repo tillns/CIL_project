@@ -20,7 +20,7 @@ num_val_images: 10
 
 model_kind: 3
 num_convs_per_res: 1
-kernel: 4  # 5 in tf DCGAN
+kernel: 5  # 5 in tf DCGAN
 features: 4
 max_features: 64  # 128 in tf DCGAN
 norm_type: batch
@@ -28,7 +28,7 @@ min_res: 4
 lrelu_alpha: 0.2
 weight_reg_kind: l2
 weight_reg_factor: 0
-ratio_gen_dis: 1  # 1 in tf DCGAN
+ratio_gen_dis: 2  # 1 in tf DCGAN
 # special generator and discriminator conf
 dis:
   strided_conv: True  # True in tf DCGAN
@@ -39,4 +39,4 @@ dis:
 gen:
   transp_conv: True  # True in tf DCGAN
   use_bias: False  # False in tf DCGAN
-  input_neurons: 25  # 100 in tf DCGAN
+  input_neurons: 50  # 100 in tf DCGAN
