@@ -266,7 +266,7 @@ def _load_and_preprocess_images(image_directory, image_ids, num_features):
 
         image = PIL.Image.open(os.path.join(image_directory, "{}.png".format(id)))
         np_image = np.array(image.getdata(), dtype=np.uint8)
-        image_features, _ = np.histogram(np_image, bins=num_features)
+        image_features, _ = np.histogram(np_image, bins=num_features, range=(0, 255))
         image_feature_matrix[i] = image_features
 
     print("\t\t\tfinished loading images!")
