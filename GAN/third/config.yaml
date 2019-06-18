@@ -1,35 +1,42 @@
 # general conf
-image_size: 125
-percentage_train: 0.9
-max_elements: 9600
+image_size: 28
+image_channels: 1
+vmin: -1
+vmax: 1  # use either -1 and 1 or 0 and 1
+percentage_train: 0.9  # validation doesn't work with star patches yet
+val_model_kind: rf  # nn for neural network or rf for random forest
 period_to_save_cp: 5
-num_epochs_for_lin_regression: 20
 num_epochs: 400
-batch_size: 20
-lr: 0.001
-train_loss_type: MSE  # CE, MSE or MAE
-val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
+batch_size: 200
+lr: 0.0001
+lr_decay: 0.005  # experiment
 gan_loss: lsgan
-rot_range: 0
+nn_val_model_path: 3convs/cp-0137.ckpt
+rf_val_model_path: random_forest_10_0.9.sav
+jitter_padding: 2  # randomly translate input batch by padding black pixels. Use multiple of 2.
+num_val_images: 10
 
 # general model conf
 
-num_convs_per_res: 3
-
-kernel: 3
+model_kind: 3
+num_convs_per_res: 1
+kernel: 5  # 5 in tf DCGAN
 features: 4
-max_features: 32
+max_features: 512  # 128 in tf DCGAN
 norm_type: batch
 min_res: 4
 lrelu_alpha: 0.2
-use_bias: False
 weight_reg_kind: l2
 weight_reg_factor: 0
+ratio_gen_dis: 1  # 1 in tf DCGAN
 # special generator and discriminator conf
 dis:
-  strided_conv: True
+  strided_conv: True  # True in tf DCGAN
   num_dense_layers: 2
-  dropout: 0.3
+  dropout: 0  # 0.3 in tf DCGAN
+  use_bias: True  # True in tf DCGAN
 
 gen:
-  transp_conv: False
+  transp_conv: True  # True in tf DCGAN
+  use_bias: False  # False in tf DCGAN
+  input_neurons: 50  # 100 in tf DCGAN
