@@ -407,7 +407,7 @@ if do_validation:
         val_model.load_weights(val_cp_path)
         val_model.summary()
     else:
-        val_model = joblib.load(conf['rf_val_model_path'])
+        val_model = joblib.load(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"), conf['rf_val_model_path']))
 
 json_config = generator.to_json()
 with open(os.path.join(checkpoint_dir, 'gen_config.json'), 'w') as json_file:
@@ -474,14 +474,14 @@ for epoch in range(num_epochs):
                 generated_images = generator(noise, training=False)
                 fake_output = discriminator(generated_images, training=False)
                 val_output = val_model(generated_images, training=False)/8
-                gen_val_loss += generator_loss(val_output)
+                gen_val_loss += generator_loss(val_output)/num_test_it
                 dis_val_loss += discriminator_loss(real_output, fake_output)
             else:
                 dis_val_loss += discriminator_loss(real_output, None)
 
         callbacks._call_end_hook('test')
         epoch_logs['dis']['dis_val_loss'] = dis_val_loss/num_test_it
-        epoch_logs['gen']['gen_val_loss'] = gen_val_loss/num_test_it
+        epoch_logs['gen']['gen_val_loss'] = gen_val_loss
 
     # Save the model every few epochs
     if (epoch + 1) % conf['period_to_save_cp'] == 0:
