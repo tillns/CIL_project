@@ -1,6 +1,6 @@
 # Adhoc image generator
 
-This adhoc method randomly places stars that it has detected from the given labelled images and places them randomly onto a black image. This image has some low noise on it, so that it is not a solid plack colour.
+This adhoc method randomly places stars that it has detected from the given labelled images and places them randomly onto a black image. ~~This image has some low noise on it, so that it is not a solid plack colour.~~
 
 ## Execution
 
