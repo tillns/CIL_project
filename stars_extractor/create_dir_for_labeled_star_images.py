@@ -4,9 +4,10 @@ import sys
 
 
 home_dir = os.path.expanduser("~")
+scored_thresh = 3
 image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
 label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled.csv")
-new_image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/only_labeled1")
+new_image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3")
 if not os.path.exists(new_image_directory):
     os.makedirs(new_image_directory)
 

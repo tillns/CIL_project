@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     image_list = []
     for img_name in sorted(os.listdir(args.img_path)):
-        if img_name.endswith(".jpg") and not img_name.startswith("._"):
+        if (img_name.endswith(".jpg") or img_name.endswith(".png")) and not img_name.startswith("._"):
             img = io.imread(os.path.join(args.img_path, img_name), as_gray=True)
             img_np = np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels))
             image_list.append(img_np)

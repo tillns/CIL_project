@@ -41,7 +41,7 @@ gan_dir = os.path.join(home_dir, "CIL_project/GAN/third")
 classifier_cp_dir = os.path.join(home_dir, "CIL_project/Classifier/checkpoints")
 labeled_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
 label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled.csv")
-star_directory = os.path.join(home_dir, "CIL_project/extracted_stars")
+star_directory = os.path.join(home_dir, "CIL_project/extracted_stars_Hannes")
 if image_size == 28:
     image_directory = star_directory
 else:
@@ -72,6 +72,7 @@ def detransform(numpy_image_array):
 
 def jitter(numpy_image_array, total_padding):
     return_array = get_pad(numpy_image_array, total_padding=total_padding, constant_values=vmin)
+    view_array = return_array[:, :, :, 0].numpy()
     return return_array[:, total_padding//2:-total_padding//2, total_padding//2:-total_padding//2]
 
 
@@ -431,7 +432,7 @@ for epoch in range(num_epochs):
     np.random.shuffle(train_images)
     for iteration in range(num_train_it):
         x_ = train_images[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]
-        x_ = jitter(x_, conf['jitter_padding'])
+        # x_ = jitter(x_, conf['jitter_padding'])
         #for i in range(2):
             #if randint(0, 1):
                 #x_ = np.flip(x_, axis=i + 1)  # randomly flip x- and y-axis
@@ -496,7 +497,7 @@ for epoch in range(num_epochs):
 
 
     # Save the model every few epochs
-    if (not do_validation and (epoch + 1) % conf['period_to_save_cp'] == 0) or (do_validation and save_new_cp):
+    if (not do_validation and (epoch + 1) % conf['period_to_save_cp'] == 0) or (do_validation and save_new_cp or (epoch + 1) % 40 == 0):
 
         try:
             checkpoint_path = os.path.join(checkpoint_dir, "cp_{}_epoch{}".format("{}", epoch + 1))

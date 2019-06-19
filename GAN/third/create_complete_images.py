@@ -43,7 +43,7 @@ def score_tensor(image_tensor):
 def create_complete_images(gen_model, vmin=0, num_images_to_create=100):
     num_stars_per_pic = []
     for i in range(num_images_to_create):
-        num_stars_per_pic.append(round_pos_int(gauss(12.32, 4.04103)))
+        num_stars_per_pic.append(round_pos_int(gauss(12.3, 4)))
 
     star_patch_size = gen_model.output.shape[1]
     image_tensor = np.zeros((num_images_to_create, image_size+star_patch_size, image_size+star_patch_size,
@@ -83,10 +83,13 @@ if __name__ == '__main__':
     custom_objects = {'TanhLayer': TanhLayer} if conf['vmin'] == -1 else {'Sigmoidayer': SigmoidLayer}
     gen_model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
     gen_model.load_weights(args.checkpoint_path[:-len('.data-00000-of-00001')])
-    image_tensor = create_complete_images(gen_model, vmin=conf['vmin'])
+    image_tensor = create_complete_images(gen_model, vmin=conf['vmin'], num_images_to_create=100)
 
-    if False:
+    if True:
         for num_img in range(image_tensor.shape[0]):
             img_np2 = image_tensor[num_img, :, :, 0]
-            plt.imshow(img_np2, cmap='gray', vmin=conf['vmin'], vmax=conf['vmax'])
-            plt.show()
+            #plt.imshow(img_np2, cmap='gray', vmin=conf['vmin'], vmax=conf['vmax'])
+            plt.imsave(os.path.join(os.path.join(home_dir, "CIL_project/GAN/third/compl_images"),
+                                    "{}.png".format(num_img)), img_np2, cmap='gray', vmin=conf['vmin'], vmax=conf['vmax'])
+            #plt.show()
+    score_tensor(image_tensor)

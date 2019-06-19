@@ -309,4 +309,7 @@ class Models():
             elif conf['vmin'] == -1 and conf['vmax'] == 1:
                 model.add(TanhLayer())
 
+        elif self.model_kind == 5:
+            start_size = 4
+
         return model
