@@ -27,6 +27,8 @@ parser_vae.add_argument("--path_json_generative",
                         default="/cluster/home/hannepfa/CIL_project/VAE_stars/json_generative/model_config.json", type=str)
 parser_vae.add_argument("--path_ckpt_generative", 
                         default="/cluster/home/hannepfa/CIL_project/VAE_stars/ckpt_generative/checkpoint", type=str)
+parser_vae.add_argument("--output_dir_generated_images", 
+                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/generated/", type=str)
 parser_vae.add_argument("--frac_train", default=0.9, type=float)
 
 # Hyperparameters
