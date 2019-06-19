@@ -69,7 +69,7 @@ def test_model():
 with open("config.yaml", 'r') as stream:
     conf = yaml.full_load(stream)
 
-test_on_query = False
+test_on_query = True
 restore_checkpoint = test_on_query
 image_size = conf['image_size']
 image_channels = 1
@@ -77,7 +77,8 @@ home_dir = os.path.expanduser("~")
 classifier_dir = os.path.join(home_dir, "CIL_project/Classifier")
 scored_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored")
 label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored.csv")
-query_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/query")
+# query_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/query")
+query_directory = os.path.join(home_dir, "CIL_project/GAN/third/compl_images")
 image_directory = query_directory if test_on_query else scored_directory
 percentage_train = conf['percentage_train'] if not test_on_query else 1
 print("Searching for images in {}".format(image_directory))
@@ -409,7 +410,7 @@ if test_on_query:
     batch_size = conf['batch_size']
     test_model()
     load_dataset()
-    with open(os.path.join(cp_dir_time, 'query{}.csv'.format(epoch_start)), 'w') as csvfile:
+    with open(os.path.join(cp_dir_time, 'query_compl{}.csv'.format(epoch_start)), 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
         filewriter.writerow(['Id', 'Predicted'])

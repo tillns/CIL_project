@@ -1,0 +1,24 @@
+# general conf
+image_size: 28
+period_to_save_cp: 5
+tot_num_epochs: 400
+batch_size: 200
+lr: 0.001
+train_loss_type: MSE  # CE, MSE or MAE
+val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
+rot_range: 0
+
+# model conf
+num_convs_per_downsample: 3
+downsample_stride: 2
+num_dense_layers: 2
+kernel: 3
+features: 4
+max_features: 32
+norm_type: batch  # batch, pixel or None (couldn't find instance norm)
+min_res: 4
+lrelu_alpha: 0.2
+use_bias: False
+dropout: 0.3
+weight_reg_kind: l2
+weight_reg_factor: 0

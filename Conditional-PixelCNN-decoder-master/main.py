@@ -92,7 +92,7 @@ if __name__ == "__main__":
         conf.channel = 1
         conf.num_batches = data.train.num_examples // conf.batch_size
     elif conf.data == 'mnist':
-        path = os.path.join(os.path.expanduser("~"), "CIL_project/extracted_stars")
+        path = os.path.join(os.path.expanduser("~"), "CIL_project/extracted_stars_Hannes")
         conf.num_classes = 10
         conf.img_height = 28
         conf.img_width = 28
