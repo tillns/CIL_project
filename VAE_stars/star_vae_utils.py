@@ -17,7 +17,7 @@ import cv2
 
 
 def _extract_stars_28x28(image):
-
+    
     """ Extracts stars from an image
     
     Detects all stars within the given image, extracts them and centers them within patches of size 28x28 with a black background.
@@ -40,13 +40,14 @@ def _extract_stars_28x28(image):
     _, image_binary = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY)
   
     contours, _ = cv2.findContours(image_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
-     
+    
     
     # tuples (x, y, w, h)
     bounding_rects = [cv2.boundingRect(c) for c in contours] 
   
     bounding_rects_filtered = [r for r in bounding_rects 
                                if not(r[0] <= 0 or r[0] + r[2] >= 1000 or r[1] <= 0 or r[1] + r[3] >= 1000)]
+  
     patches = []
   
 
@@ -54,12 +55,12 @@ def _extract_stars_28x28(image):
     
         x = r[0]; y = r[1]; w = r[2]; h = r[3]
     
-        if(w > 28 or h > 28): # first filter
+        if(w > 28 or h > 28):
             continue
     
         star = image[y : y + h, x : x + w]
     
-        if np.amax(star) < 30: # second filter
+        if np.amax(star) < 30:
             continue
     
         patch = np.zeros((28, 28), dtype=np.float32)
@@ -71,7 +72,7 @@ def _extract_stars_28x28(image):
     
         patches.append(patch)
   
-
+    
     return patches
 
 
@@ -128,23 +129,22 @@ def _load_stars_28x28(path_csv, path_labeled_images):
 
         # a list works well in terms of performance
         images = [] # images
-        mirror_images = [] # mirror images
         
-        
+                
         for idx, filename in enumerate(list_filenames):
-        
-            if labels[idx] == 1.0: # include only images with label == 1.0
-                      
-                img = cv2.imread(path_labeled_images + filename, cv2.IMREAD_GRAYSCALE)
-        
             
-                patches = _extract_stars_28x28(img)      
+            if labels[idx] == 1.0: # include only images with label == 1.0
+      
+                img = cv2.imread(path_labeled_images + filename, cv2.IMREAD_GRAYSCALE)
+    
+    
+                patches = _extract_stars_28x28(img)
       
                 for p in patches:
-                                    
+          
                     p = p.reshape((28, 28, 1))
                     p = np.divide(p, 255.0)
-                
+                  
                     images.append(p)
                   
         
@@ -189,7 +189,7 @@ def load_train_test_dataset(path_csv, path_labeled_images, frac_train, batch_siz
         
     num_images_train = int(num_star_images * frac_train)
     num_images_test = num_star_images - num_images_train
-    
+        
     train_dataset = tf.data.Dataset.from_tensor_slices(
         star_images[:num_images_train, :, :, :]).shuffle(num_images_train).batch(batch_size)
     
