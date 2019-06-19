@@ -156,7 +156,6 @@ if __name__ == "__main__":
     
     path_csv = arguments.path_csv
     dir_labeled_images = arguments.dir_labeled_images
-    path_json_generative = arguments.path_json_generative
     path_ckpt_generative = arguments.path_ckpt_generative
     frac_train = arguments.frac_train
     
