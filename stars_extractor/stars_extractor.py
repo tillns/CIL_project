@@ -125,8 +125,12 @@ for num, img_name in enumerate(sorted(img_list)):
     img_np = np.array(img_pil, dtype=np.uint8)
     if use_Hannes_approach:
         patches = _extract_stars_28x28(img_np)
+        num_patches_per_img.append(len(patches))
+        num_stars_per_img.append(len(patches))
         for num_patch, patch in enumerate(patches):
-            patch_pil = Image.fromarray(np.uint8(patch), 'L')
+            patch = np.uint8(patch)
+            max_brightnesses.append(np.max(patch))
+            patch_pil = Image.fromarray(patch, 'L')
             # patch_pil.show("{} star number {}".format(img_name, counter))
             patch_pil.save(os.path.join(stars_dir, "{}_star{}.png".format(img_name.split(".png")[0], num_patch)))
 

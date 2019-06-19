@@ -43,7 +43,7 @@ def score_tensor(image_tensor):
 def create_complete_images(gen_model, vmin=0, num_images_to_create=100):
     num_stars_per_pic = []
     for i in range(num_images_to_create):
-        num_stars_per_pic.append(round_pos_int(gauss(12.3, 4)))
+        num_stars_per_pic.append(round_pos_int(gauss(6.27, 2.64)))
 
     star_patch_size = gen_model.output.shape[1]
     image_tensor = np.zeros((num_images_to_create, image_size+star_patch_size, image_size+star_patch_size,
