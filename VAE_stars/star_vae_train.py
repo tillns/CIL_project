@@ -23,8 +23,10 @@ parser_vae = ArgumentParser()
 
 parser_vae.add_argument("--path_csv", default="/cluster/home/hannepfa/cosmology_aux_data/labeled.csv", type=str)
 parser_vae.add_argument("--dir_labeled_images", default="/cluster/home/hannepfa/cosmology_aux_data/labeled/", type=str)
-parser_vae.add_argument("--path_ckpt", default="/cluster/home/hannepfa/checkpoints_vae/stable/checkpoint", type=str)
-parser_vae.add_argument("--path_ckpt_stable", default="/cluster/home/hannepfa/checkpoints_vae/tmp/checkpoint", type=str)
+parser_vae.add_argument("--path_json_generative", 
+                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/json_generative/model_config.json", type=str)
+parser_vae.add_argument("--path_ckpt_generative", 
+                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/ckpt_generative/checkpoint", type=str)
 parser_vae.add_argument("--frac_train", default=0.9, type=float)
 
 # Hyperparameters
@@ -143,29 +145,28 @@ def train_star_vae(path_csv, path_labeled_images, frac_train, model):
     return KL_div_train, reconstr_error_train, KL_div_test, reconstr_error_test
             
             
-def save_trained_model(model, path_ckpt):
+def save_ckpt_generative(model, path_ckpt):
     
     model.save_weights(path_ckpt)
-        
-        
-def load_pretrained_model(model, path_ckpt):
-    
-    model.load_weights(path_ckpt)
-        
-              
-def load_stable_pretrained_model(model, path_ckpt_stable):   
-    
-    model.load_weights(path_ckpt_stable)
 
-
+    
+def save_json_generative(model, path_json):
+    
+    json_config = model.to_json()
+    
+    with open(path_json, 'w') as json_file:
+        
+        json_file.write(json_config)
+    
+        
 if __name__ == "__main__":
     
     arguments = parser_vae.parse_args()
     
     path_csv = arguments.path_csv
     dir_labeled_images = arguments.dir_labeled_images
-    path_ckpt = arguments.path_ckpt
-    path_ckpt_stable = arguments.path_ckpt_stable
+    path_json_generative = arguments.path_json_generative
+    path_ckpt_generative = arguments.path_ckpt_generative
     frac_train = arguments.frac_train
     
     
@@ -173,6 +174,14 @@ if __name__ == "__main__":
         
     train_star_vae(path_csv, dir_labeled_images, frac_train, model)
     
-   
-
-
+    
+    save_json_generative(model.generative_net, path_json_generative)
+    
+    save_ckpt_generative(model.generative_net, path_ckpt_generative)
+    
+    
+    
+    
+    
+    
+    

@@ -39,7 +39,7 @@ def _extract_stars_28x28(image):
   
     _, image_binary = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY)
   
-    contours, _ = cv2.findContours(image_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(image_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
      
     
     # tuples (x, y, w, h)
