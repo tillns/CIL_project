@@ -25,8 +25,13 @@ image_size = 28
 image_channels = 1
 home_dir = os.path.expanduser("~")
 ae_dir = os.path.join(home_dir, "CIL_project/AE_plus_KMeans")
+num_clusters = 10
 
 image_directory = os.path.join(home_dir, "CIL_project/extracted_stars_Hannes")
+clustered_img_dir_base = os.path.join(ae_dir, "clustered_images/{}".format(datetime.now().strftime("%Y%m%d-%H%M%S")))
+os.makedirs(clustered_img_dir_base)
+for i in range(num_clusters):
+    os.makedirs(os.path.join(clustered_img_dir_base, "{}".format(i)))
 
 def load_dataset():
     images = []
@@ -36,6 +41,13 @@ def load_dataset():
 
         images.append(img_np)
     return np.stack(images)
+
+def copy_clustered_images(y_pred_kmeans):
+    for num_img, img_name in enumerate(sorted(os.listdir(image_directory))):
+        img_path = os.path.join(image_directory, img_name)
+        new_img_path = os.path.join(clustered_img_dir_base, "{}/".format(y_pred_kmeans[num_img]))
+        os.system("cp {} {}".format(img_path, new_img_path))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -54,7 +66,7 @@ if __name__ == '__main__':
     x = load_dataset()
     latent = encoder(x).numpy()
     latent = np.reshape(latent, (latent.shape[0], -1))
-    kmeans = KMeans(n_clusters=10, n_init=20, n_jobs=4)
+    kmeans = KMeans(n_clusters=num_clusters, n_init=20, n_jobs=4)
     # Train K-Means.
     y_pred_kmeans = kmeans.fit_predict(latent)
-    print(y_pred_kmeans)
+    copy_clustered_images(y_pred_kmeans)
