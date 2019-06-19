@@ -38,8 +38,8 @@ if __name__ == "__main__":
     
     num_samples = 100
             
-    # NOTE: latent dimension is inferred
-    z = tf.random.normal(shape=(num_samples, generative_net.input.shape[1]))
+    # NOTE: latent dimension is explicitly set
+    z = tf.random.normal(shape=(num_samples, 16))
     
     samples_logits = generative_net(z)
     
