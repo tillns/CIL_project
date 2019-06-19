@@ -23,8 +23,6 @@ parser_vae = ArgumentParser()
 
 parser_vae.add_argument("--path_csv", default="/cluster/home/hannepfa/cosmology_aux_data/labeled.csv", type=str)
 parser_vae.add_argument("--dir_labeled_images", default="/cluster/home/hannepfa/cosmology_aux_data/labeled/", type=str)
-parser_vae.add_argument("--path_json_generative", 
-                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/json_generative/model_config.json", type=str)
 parser_vae.add_argument("--path_ckpt_generative", 
                         default="/cluster/home/hannepfa/CIL_project/VAE_stars/ckpt_generative/checkpoint", type=str)
 parser_vae.add_argument("--output_dir_generated_images", 
@@ -150,15 +148,6 @@ def train_star_vae(path_csv, path_labeled_images, frac_train, model):
 def save_ckpt_generative(model, path_ckpt):
     
     model.save_weights(path_ckpt)
-
-    
-def save_json_generative(model, path_json):
-    
-    json_config = model.to_json()
-    
-    with open(path_json, 'w') as json_file:
-        
-        json_file.write(json_config)
     
         
 if __name__ == "__main__":
@@ -177,13 +166,6 @@ if __name__ == "__main__":
     train_star_vae(path_csv, dir_labeled_images, frac_train, model)
     
     
-    save_json_generative(model.generative_net, path_json_generative)
-    
     save_ckpt_generative(model.generative_net, path_ckpt_generative)
-    
-    
-    
-    
-    
     
     

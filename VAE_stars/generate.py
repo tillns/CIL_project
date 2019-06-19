@@ -7,6 +7,7 @@ This script loads the pretrained variational autoencoder model and generates 100
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from star_vae import StarVAE
 from star_vae_train import parser_vae
 
 import tensorflow as tf
@@ -20,26 +21,20 @@ if __name__ == "__main__":
     arguments = parser_vae.parse_args()
     
     
-    path_json_generative = arguments.path_json_generative
     path_ckpt_generative = arguments.path_ckpt_generative
-    
+ 
     output_dir_generated_images = arguments.output_dir_generated_images
-    
-    
-    with open(path_json_generative) as json_file:
-        
-        json_config = json_file.read()
 
     
-    generative_net = tf.keras.models.model_from_json(json_config)
-    
+    model = StarVAE(16) # NOTE: latent dimension is explicitly set 
+    generative_net = model.generative_net
+
     generative_net.load_weights(path_ckpt_generative)
     
+  
+    num_samples = 100    
     
-    num_samples = 100
-            
-    # NOTE: latent dimension is inferred
-    z = tf.random.normal(shape=(num_samples, generative_net.input.shape[1]))
+    z = tf.random.normal(shape=(num_samples, 16)) # NOTE: latent dimension is explicitly set 
     
     samples_logits = generative_net(z)
     
@@ -50,11 +45,3 @@ if __name__ == "__main__":
         cv2.imwrite(output_dir_generated_images + "image" + str(j) + ".png", sample)
         
         
-        
-        
-        
-        
-    
-    
-    
-    
