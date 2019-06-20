@@ -28,6 +28,10 @@ parser_vae.add_argument("--path_ckpt_generative_stable",
                         default="/cluster/home/hannepfa/CIL_project/VAE_stars/ckpt_generative_stable/checkpoint", type=str)
 parser_vae.add_argument("--output_dir_generated_images", 
                         default="/cluster/home/hannepfa/CIL_project/VAE_stars/generated/", type=str)
+parser_vae.add_argument("--path_pretrained_random_forest", 
+                        default="/cluster/home/hannepfa/CIL_project/RandomForest/random_forest_10_0.9.sav", type=str)
+parser_vae.add_argument("--path_scorefile", 
+                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/scorefile.csv", type=str)
 parser_vae.add_argument("--frac_train", default=0.9, type=float)
 
 
