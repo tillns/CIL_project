@@ -58,7 +58,8 @@ def create_complete_images(output_dir, generative_net, background=0, num_images=
             star_image = (np.array(tf.sigmoid(generative_net(z))).reshape(28, 28) * 255).astype(np.uint8)
             
             
-            image_padded[x : x + 28, y : y + 28] = star_image
+            image_padded[x : x + 28, y : y + 28] = np.maximum(
+                image_padded[x : x + 28, y : y + 28], star_image) # NOTE: superposition
             
             
         image = image_padded[14 : 14 + 1000, 14 : 14 + 1000]
