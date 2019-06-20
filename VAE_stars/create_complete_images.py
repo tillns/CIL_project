@@ -7,6 +7,7 @@ This script loads the pretrained variational autoencoder model and creates 100 c
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from star_vae import StarVAE
 from star_vae_train import parser_vae
 
 # !pip install -q tensorflow-gpu==2.0.0-alpha0
@@ -41,12 +42,12 @@ def create_complete_images(output_dir, generative_net, background=0, num_images=
     
     for i in range(num_images):
         
-        image_padded = np.full((1028, 1028), background, dtype=np.uint8)
+        image_padded = np.full((1028, 1028), background).astype(np.uint8)
                 
         
         num_stars = _nonnegative_int(gauss(_mean, _std_dev))
-        
-        for i in num_stars:
+                
+        for j in range(num_stars):
             
             x = randint(0, 1000 - 1)
             y = randint(0, 1000 - 1)
@@ -62,7 +63,7 @@ def create_complete_images(output_dir, generative_net, background=0, num_images=
             
         image = image_padded[14 : 14 + 1000, 14 : 14 + 1000]
             
-        cv2.imwrite(output_dir + "image" + str(j) + ".png", sample)
+        cv2.imwrite(output_dir + "image" + str(i) + ".png", image)
 
 
 if __name__ == "__main__":
