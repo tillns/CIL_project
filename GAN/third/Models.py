@@ -182,7 +182,7 @@ class Models():
                                                  padding='same', use_bias=dconf['use_bias']))
             else:
                 model.add(tf.keras.layers.Conv2D(conf['max_features'], self.kernel, strides=(1, 1), padding='same',
-                                                 input_shape=[28, 28, 1], use_bias=dconf['use_bias']))
+                                                 use_bias=dconf['use_bias']))
                 model.add(tf.keras.layers.MaxPool2D())
             model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
             model.add(tf.keras.layers.Dropout(dconf['dropout']))
@@ -191,14 +191,39 @@ class Models():
             model.add(tf.keras.layers.Dense(1))
 
         elif self.model_kind == 4:
-            model.add(tf.keras.layers.InputLayer(input_shape=(28, 28, 1)))
-            model.add(tf.keras.layers.Flatten())
-            model.add(tf.keras.layers.Dense(500, activation=None))
-            model.add(tf.keras.layers.ReLU())
-            model.add(tf.keras.layers.Dropout(0.2))
-            model.add(tf.keras.layers.BatchNormalization())
-            model.add(tf.keras.layers.Dense(1))
-            #model.add(SigmoidLayer())
+            input_image = tf.keras.layers.Input((28, 28, 1))
+            if dconf['strided_conv']:
+                x = tf.keras.layers.Conv2D(conf['max_features']//2, self.kernel, strides=(2, 2), padding='same',
+                                           use_bias=dconf['use_bias'])(input_image)
+            else:
+                x = tf.keras.layers.Conv2D(conf['max_features']//2, self.kernel, strides=(1, 1), padding='same',
+                                          use_bias=dconf['use_bias'])(input_image)
+                x = tf.keras.layers.MaxPool2D()(x)
+            x = tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha'])(x)
+            x = tf.keras.layers.Dropout(dconf['dropout'])(x)
+
+            if dconf['strided_conv']:
+                x = tf.keras.layers.Conv2D(conf['max_features'], self.kernel, strides=(2, 2),
+                                           padding='same', use_bias=dconf['use_bias'])(x)
+            else:
+                x = tf.keras.layers.Conv2D(conf['max_features'], self.kernel, strides=(1, 1), padding='same',
+                                           use_bias=dconf['use_bias'])(x)
+                x = tf.keras.layers.MaxPool2D()(x)
+            x = tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha'])(x)
+            x = tf.keras.layers.Dropout(dconf['dropout'])(x)
+            x = tf.keras.layers.Flatten()(x)
+
+
+            input_c = tf.keras.layers.Input((conf['num_classes'],))
+            x_c = tf.keras.layers.Dense(7 * 7 * conf['max_features'], use_bias=dconf['use_bias'])(input_c)
+            x_c = tf.keras.layers.BatchNormalization()(x_c)
+            x_c = tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha'])(x_c)
+
+            x = tf.keras.layers.Concatenate()([x, x_c])
+            out_x = tf.keras.layers.Dense(1)(x)
+            # out_x = tf.keras.layers.Activation('sigmoid')(out_x)
+
+            model = tf.keras.models.Model(inputs=[input_image, input_c], outputs=out_x, name='dis')
 
         return model
 
@@ -271,7 +296,6 @@ class Models():
             model.add(tf.keras.layers.Dense(7 * 7 * 256, use_bias=gconf['use_bias'], input_shape=(gconf['input_neurons'],)))
             model.add(tf.keras.layers.BatchNormalization())
             model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
-
             model.add(tf.keras.layers.Reshape((7, 7, 256)))
 
             model.add(tf.keras.layers.Conv2DTranspose(conf['max_features'], self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
@@ -298,15 +322,47 @@ class Models():
                 model.add(TanhLayer())
 
         elif self.model_kind == 4:
-            model.add(tf.keras.layers.InputLayer(input_shape=(gconf['input_neurons'],)))
-            model.add(tf.keras.layers.Dense(500))
-            model.add(tf.keras.layers.ReLU())
-            model.add(tf.keras.layers.BatchNormalization())
-            model.add(tf.keras.layers.Dense(28 * 28 * 1))
-            model.add(tf.keras.layers.Reshape(target_shape=(28, 28, 1)))
+            input_latent = tf.keras.layers.Input((gconf['input_neurons'],))
+            x = tf.keras.layers.Dense(7 * 7 * 256, use_bias=gconf['use_bias'])(input_latent)
+            x = tf.keras.layers.BatchNormalization()(x)
+            x = tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha'])(x)
+            x = tf.keras.layers.Reshape((7, 7, 256))(x)
+
+            input_c = tf.keras.layers.Input((conf['num_classes'],))
+            x_c = tf.keras.layers.Dense(7 * 7 * 256, use_bias=gconf['use_bias'])(input_c)
+            x_c = tf.keras.layers.BatchNormalization()(x_c)
+            x_c = tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha'])(x_c)
+            x_c = tf.keras.layers.Reshape((7, 7, 256))(x_c)
+
+            x = tf.keras.layers.Concatenate()([x, x_c])
+
+            x = tf.keras.layers.Conv2DTranspose(conf['max_features'], self.kernel, strides=(1, 1), padding='same',
+                                                      use_bias=gconf['use_bias'])(x)
+            x = tf.keras.layers.BatchNormalization()(x)
+            x = tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha'])(x)
+
+            if gconf['transp_conv']:
+                x = tf.keras.layers.Conv2DTranspose(conf['max_features'] // 2, self.kernel, strides=(2, 2),
+                                                          padding='same', use_bias=gconf['use_bias'])(x)
+            else:
+                x = tf.keras.layers.UpSampling2D()(x)
+                x = tf.keras.layers.Conv2D(conf['max_features'] // 2, self.kernel, strides=(1, 1), padding='same',
+                                                 use_bias=gconf['use_bias'])(x)
+            x = tf.keras.layers.BatchNormalization()(x)
+            x = tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha'])(x)
+
+            if gconf['transp_conv']:
+                x = tf.keras.layers.Conv2DTranspose(1, self.kernel, strides=(2, 2), padding='same',
+                                                          use_bias=gconf['use_bias'])(x)
+            else:
+                x = tf.keras.layers.UpSampling2D()(x)
+                x = tf.keras.layers.Conv2D(1, self.kernel, strides=(1, 1), padding='same',
+                                           use_bias=gconf['use_bias'])(x)
             if conf['vmin'] == 0 and conf['vmax'] == 1:
-                model.add(SigmoidLayer())
+                out_x = tf.keras.layers.Activation('sigmoid')(x)
             elif conf['vmin'] == -1 and conf['vmax'] == 1:
-                model.add(TanhLayer())
+                out_x = tf.keras.layers.Activation('tanh')(x)
+
+            model = tf.keras.models.Model(inputs=[input_latent, input_c], outputs=out_x, name='gen')
 
         return model

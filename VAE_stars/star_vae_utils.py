@@ -17,7 +17,7 @@ import cv2
 
 
 def _extract_stars_28x28(image):
-
+    
     """ Extracts stars from an image
     
     Detects all stars within the given image, extracts them and centers them within patches of size 28x28 with a black background.
@@ -25,8 +25,9 @@ def _extract_stars_28x28(image):
     
     Parameters
     ----------
-    image : numpy.ndarray
-        The image from which the stars are extracted. The image is assumed to be grayscale.
+    image : np.ndarray
+        The image from which the stars are extracted. The dimensions of the image are assumed to be 1000x1000. The 
+        image is assumed to be grayscale.
         
         
     Returns
@@ -38,7 +39,7 @@ def _extract_stars_28x28(image):
   
     _, image_binary = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY)
   
-    _, contours, _ = cv2.findContours(image_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(image_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
     
     
     # tuples (x, y, w, h)
@@ -46,6 +47,7 @@ def _extract_stars_28x28(image):
   
     bounding_rects_filtered = [r for r in bounding_rects 
                                if not(r[0] <= 0 or r[0] + r[2] >= 1000 or r[1] <= 0 or r[1] + r[3] >= 1000)]
+  
     patches = []
   
 
@@ -70,11 +72,30 @@ def _extract_stars_28x28(image):
     
         patches.append(patch)
   
-
+    
     return patches
 
 
 def _load_stars_28x28(path_csv, path_labeled_images):
+    
+    """ Creates a list of star images
+    
+    Loads the labeled images and extracts a list of approximately 6000 star images with dimensions 28x28.
+    
+    Parameters
+    ----------
+    path_csv : str
+        The path to the CSV file containing the image labels
+    path_labeled_images : str
+        The path to the directory containing the labeled images
+        
+        
+    Returns
+    -------
+    images : list
+        The list of star images
+        
+    """ 
     
     try:
         csv_file = open(path_csv, "r")
@@ -108,46 +129,72 @@ def _load_stars_28x28(path_csv, path_labeled_images):
 
         # a list works well in terms of performance
         images = [] # images
-        mirror_images = [] # mirror images
         
                 
         for idx, filename in enumerate(list_filenames):
             
             if labels[idx] == 1.0: # include only images with label == 1.0
       
-                img = cv2.imread(os.path.join(path_labeled_images, filename), cv2.IMREAD_GRAYSCALE)
+                img = cv2.imread(path_labeled_images + filename, cv2.IMREAD_GRAYSCALE)
+    
     
                 patches = _extract_stars_28x28(img)
       
-      
                 for p in patches:
-                    
+          
                     p = p.reshape((28, 28, 1))
                     p = np.divide(p, 255.0)
-                
+                  
                     images.append(p)
                   
         
         # conversion allows for batches to be extracted
         return np.stack(images)
 
-    except Error:
-        print("error: failed to load labeled images.")
+    except:
+        print("ERROR: failed to load labeled images.")
         
         
 def load_train_test_dataset(path_csv, path_labeled_images, frac_train, batch_size):
     
-    stars = _load_stars_28x28(path_csv, path_labeled_images)
-    num_stars = len(stars)
-        
-    num_images_train = int(num_stars * frac_train)
-    num_images_test = num_images - num_images_train
+    """ Creates a train and a test dataset of star images
     
+    Loads the labeled images, extracts a list of approximately 6000 star images with dimensions 28x28 and
+    creates a test and a train dataset based on these.
+    
+    
+    Parameters
+    ----------
+    path_csv : str
+        The path to the CSV file containing the image labels
+    path_labeled_images : str
+        The path to the directory containing the labeled images
+    frac_train : int
+        The train / test split for the star images
+    batch_size : int
+        The desired batch size for tf.data.Dataset
+        
+        
+    Returns
+    -------
+    train_dataset : tf.data.Dataset
+        The dataset for training
+    test_dataset : tf.data.Dataset
+        The dataset for testing
+        
+    """ 
+    
+    star_images = _load_stars_28x28(path_csv, path_labeled_images)
+    num_star_images = len(star_images)
+        
+    num_images_train = int(num_star_images * frac_train)
+    num_images_test = num_star_images - num_images_train
+        
     train_dataset = tf.data.Dataset.from_tensor_slices(
-        all_images[:num_images_train, :, :, :]).shuffle(num_images_train).batch(batch_size)
+        star_images[:num_images_train, :, :, :]).shuffle(num_images_train).batch(batch_size)
     
     test_dataset = tf.data.Dataset.from_tensor_slices(
-        all_images[num_images_train:, :, :, :]).shuffle(num_images_test).batch(batch_size)
+        star_images[num_images_train:, :, :, :]).shuffle(num_images_test).batch(batch_size)
     
     return train_dataset, test_dataset
 
