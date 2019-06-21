@@ -6,7 +6,7 @@ from autoencoder import *
 from utils import *
 import os
 
-def train(conf, data):
+def train(conf, data, labels=None):
     X = tf.placeholder(tf.float32, shape=[None, conf.img_height, conf.img_width, conf.channel])
     model = PixelCNN(X, conf)
 
@@ -29,7 +29,8 @@ def train(conf, data):
         pointer = 0
         for i in range(conf.epochs):
             if conf.data == 'mnist':
-                np.random.shuffle(data)
+                indices = np.arange(len(data))
+                np.random.shuffle(indices)
             for j in range(conf.num_batches):
                 if conf.data == "mnist_original":
                     batch_X, batch_y = data.train.next_batch(conf.batch_size)
@@ -37,8 +38,9 @@ def train(conf, data):
                             conf.img_height, conf.img_width, conf.channel]))
                     batch_y = one_hot(batch_y, conf.num_classes)
                 elif conf.data == 'mnist':
-                    batch_X = data[j*conf.batch_size:(j+1)*conf.batch_size]
-                    batch_y = None  # todo: could actually condition the kind of star
+                    batch_X = data[indices[j*conf.batch_size:(j+1)*conf.batch_size]]
+                    batch_y = None if not conf.conditional else labels[indices[j*conf.batch_size:(j+1)*conf.batch_size]]
+                    # x_to_look_at = batch_X[:, :, :, 0]
                 else:
                     batch_X, pointer = get_batch(data, pointer, conf.batch_size)
                 data_dict = {X:batch_X}
@@ -56,14 +58,31 @@ def train(conf, data):
 def transform(numpy_image_array, vmin=0, vmax=1):
     return numpy_image_array / 255.0 * (vmax-vmin) + vmin
 
-def load_dataset(path, image_size, image_channels, vmin=0, vmax=1):
+def load_dataset(path, image_size, image_channels, vmin=0, vmax=1, conditional=False):
     images = []
-    for img_name in sorted(os.listdir(path)):
-        img = Image.open(os.path.join(path, img_name)).resize((image_size, image_size))
-        img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)),
-                           vmin, vmax)
-        images.append(img_np)
-    return np.stack(images)
+    if not conditional:
+        for img_name in sorted(os.listdir(path)):
+            img = Image.open(os.path.join(path, img_name)).resize((image_size, image_size))
+            img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)),
+                               vmin, vmax)
+
+            images.append(img_np)
+        return np.stack(images), None
+    else:
+        labels = []
+        num_classes = len(os.listdir(path))
+        for label, folder_name in enumerate(sorted(os.listdir(path))):
+            folder_path = os.path.join(path, folder_name)
+            label_vec = np.zeros(num_classes)
+            label_vec[label] += 1
+            for img_name in sorted(os.listdir(folder_path)):
+                img = Image.open(os.path.join(folder_path, img_name)).resize((image_size, image_size))
+                img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)),
+                                   vmin, vmax)
+                np_to_look_at = img_np[:, :, 0]
+                images.append(img_np)
+                labels.append(label_vec)
+        return np.stack(images), np.stack(labels)
 
 
 if __name__ == "__main__":
@@ -71,10 +90,10 @@ if __name__ == "__main__":
     parser.add_argument('--data', type=str, default='mnist')
     parser.add_argument('--layers', type=int, default=12)
     parser.add_argument('--f_map', type=int, default=32)
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--batch_size', type=int, default=100)
     parser.add_argument('--grad_clip', type=int, default=1)
-    parser.add_argument('--model', type=str, default='')
+    parser.add_argument('--model', type=str, default='conditional')
     parser.add_argument('--data_path', type=str, default='data')
     parser.add_argument('--ckpt_path', type=str, default='ckpts')
     parser.add_argument('--samples_path', type=str, default='samples')
@@ -92,13 +111,14 @@ if __name__ == "__main__":
         conf.channel = 1
         conf.num_batches = data.train.num_examples // conf.batch_size
     elif conf.data == 'mnist':
-        path = os.path.join(os.path.expanduser("~"), "CIL_project/extracted_stars_Hannes")
-        conf.num_classes = 10
+        path = os.path.join(os.path.expanduser("~"),
+                            "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats")
         conf.img_height = 28
         conf.img_width = 28
         conf.channel = 1
-        conf.num_batches = len(os.listdir(path)) // conf.batch_size
-        data = load_dataset(path, conf.img_height, conf.channel)
+        data, labels = load_dataset(path, conf.img_height, conf.channel, conditional=(conf.model == 'conditional'))
+        conf.num_batches = len(labels) // conf.batch_size
+        conf.num_classes = np.argmax(labels[-1])+1 if labels is not None else 5
     else:
         from keras.datasets import cifar10
         data = cifar10.load_data()
@@ -120,7 +140,7 @@ if __name__ == "__main__":
         train(conf, data)
     elif conf.model.lower() == 'conditional':
         conf.conditional = True
-        train(conf, data)
+        train(conf, data, labels)
     elif conf.model.lower() == 'autoencoder':
         conf.conditional = True
         trainAE(conf, data)

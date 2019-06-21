@@ -5,7 +5,7 @@ from PIL import Image
 import cv2
 
 home_dir = os.path.expanduser("~")
-img_dir = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3")
+img_dir = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scoredover4")
 stars_dir = os.path.join(home_dir, "CIL_project/extracted_stars_Hannes")
 if not os.path.exists(stars_dir):
     os.makedirs(stars_dir)

@@ -4,10 +4,10 @@ import sys
 
 
 home_dir = os.path.expanduser("~")
-scored_thresh = 3
-image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
-label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled.csv")
-new_image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3")
+scored_thresh = 4
+image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored")
+label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored.csv")
+new_image_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scoredover4")
 if not os.path.exists(new_image_directory):
     os.makedirs(new_image_directory)
 
@@ -35,6 +35,6 @@ except FileNotFoundError:
 
 for num in range(len(img_list)):
     label = label_list[num][1]
-    if label == 1:
+    if label >= scored_thresh:
         os.system("cp {} {}".format(os.path.join(image_directory, img_list[num]), os.path.join(new_image_directory, img_list[num])))
 

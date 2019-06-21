@@ -41,7 +41,8 @@ gan_dir = os.path.join(home_dir, "CIL_project/GAN/third")
 classifier_cp_dir = os.path.join(home_dir, "CIL_project/Classifier/checkpoints")
 labeled_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
 label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled.csv")
-star_directory = os.path.join(home_dir, "CIL_project/extracted_stars_Hannes")
+star_directory = os.path.join(home_dir, "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats") \
+    if conf['conditional'] else os.path.join(home_dir, "CIL_project/extracted_stars_Hannes")
 if image_size == 28:
     image_directory = star_directory
 else:
@@ -61,6 +62,7 @@ num_epochs = conf['num_epochs']
 ratio_gen_dis = conf['ratio_gen_dis']
 vmin = conf['vmin']
 vmax = conf['vmax']
+conditional = conf['conditional']
 
 
 def transform(numpy_image_array):
@@ -76,37 +78,54 @@ def jitter(numpy_image_array, total_padding):
     return return_array[:, total_padding//2:-total_padding//2, total_padding//2:-total_padding//2]
 
 
-try:
-    img_list = []
-    for filename in os.listdir(image_directory):
-        if filename.endswith(".png") and not filename.startswith("._"):
-            img_list.append(filename)
-
-    img_list = sorted(img_list)
-except FileNotFoundError:
-    sys.exit("Can't find dataset")
-
 
 def load_dataset():
-    global train_images, test_images, dataset_len, train_len, test_len, num_train_it, num_test_it
+    global train_images, test_images, train_labels, test_labels, dataset_len, train_len, test_len, \
+        num_train_it, num_test_it
     images = []
-    for num in range(len(img_list)):
-        img = Image.open(os.path.join(image_directory, img_list[num])).resize((image_size, image_size))
-        img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
-        images.append(img_np)
-    dataset_len = len(images)
+    if not conditional:
+        for filename in os.listdir(image_directory):
+            if filename.endswith(".png") and not filename.startswith("._"):
+                img = Image.open(os.path.join(image_directory, filename)).resize((image_size, image_size))
+                img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
+                images.append(img_np)
+        dataset = np.stack(images)
+    else:
+        label_list = []
+        num_classes = len(os.listdir(image_directory))
+        conf['num_classes'] = num_classes
+        for label, folder_name in enumerate(sorted(os.listdir(image_directory))):
+            folder_path = os.path.join(image_directory, folder_name)
+            label_vec = np.zeros(num_classes)
+            label_vec[label] += 1
+            for img_name in sorted(os.listdir(folder_path)):
+                img = Image.open(os.path.join(folder_path, img_name)).resize((image_size, image_size))
+                img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
+                images.append(img_np)
+                label_list.append(label_vec)
+        dataset = np.stack(images)
+        labels = np.stack(label_list)
+        # dataset and labels are shuffled together, s.t. training and test set have same distribution
+        indices = np.arange(len(dataset))
+        np.random.shuffle(indices)
+        dataset = dataset[indices]
+        labels = labels[indices]
+
+    dataset_len = len(dataset)
     train_len = round(percentage_train * dataset_len)
     test_len = dataset_len - train_len
     num_train_it = math.ceil(train_len/batch_size)
     num_test_it = math.ceil(test_len/batch_size)
 
     print("Loaded all {} images".format(dataset_len))
-    train_images = np.stack(images[:train_len])
+    train_images = dataset[:train_len]
+    train_labels = labels[:train_len] if conditional else None
     if do_validation:
-        test_images = np.stack(images[train_len:])
-        assert test_images.shape[0] == test_len
+        test_images = dataset[train_len:]
+        test_labels = labels[train_len:] if conditional else None
     else:
         test_images = None
+        test_labels = None
 
 
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
@@ -261,24 +280,35 @@ class CallbackList(object):
 def get_mean(some_list):
     return sum(some_list) / len(some_list)
 
+def one_hot(batch_y, num_classes):
+    y_ = np.zeros((batch_y.shape[0], num_classes))
+    y_[np.arange(batch_y.shape[0]), batch_y] = 1
+    return y_
+
 
 def generate_and_save_images(model, epoch, test_input):
     # Notice `training` is set to False.
     # This is so all layers run in inference mode (batchnorm).
-    predictions = model(test_input, training=False)
+
+    tot = test_input.shape[0]
+    per_row = int(math.sqrt(tot)) if not conditional else conf['num_classes']
+    if conditional:
+        labels = one_hot(np.array(list(range(conf['num_classes']))*(tot//conf['num_classes'])), conf['num_classes'])
+        predictions = model([test_input, labels], training=False)
+    else:
+        predictions = model(test_input, training=False)
     predictions = detransform(predictions)
-    tot = predictions.shape[0]
     res = predictions.shape[1]
     depth = predictions.shape[3]
-    per_row = int(math.sqrt(tot))
+
     dist = int(0.25 * res)
     outres = per_row * res + dist * (per_row + 1)
     output_image = np.zeros((outres, outres, depth)) + 127.5
     for k in range(tot):
         i = k // per_row
         j = k % per_row
-        output_image[dist * (j + 1) + j * res:dist * (j + 1) + res * (j + 1),
-        dist * (i + 1) + i * res:dist * (i + 1) + res * (i + 1)] = predictions[k]
+        output_image[dist * (i + 1) + i * res:dist * (i + 1) + res * (i + 1),
+        dist * (j + 1) + j * res:dist * (j + 1) + res * (j + 1)] = predictions[k]
 
     cv2.imwrite(os.path.join(save_image_path, 'image_at_epoch_{:05d}.png'.format(epoch)), output_image)
 
@@ -316,7 +346,7 @@ def make_gif():
 
 
 
-def train_step(images, generator, discriminator, iteration, progbar):
+def train_step(images, labels, generator, discriminator, iteration, progbar):
     current_batch_size = images.shape[0]
     batch_logs = callbacks.duplicate_logs_for_models({'batch': iteration, 'size': current_batch_size})
     # print("Batch logs: {}".format(batch_logs))
@@ -326,14 +356,17 @@ def train_step(images, generator, discriminator, iteration, progbar):
     for gen_step in range(ratio_gen_dis):
         noise = tf.random.normal([current_batch_size, gconf['input_neurons']])
         with tf.GradientTape() as disc_tape, tf.GradientTape() as gen_tape:
-            generated_images = generator(noise, training=True)
-            fake_output = discriminator(generated_images, training=True)
+            generated_images = generator([noise, labels], training=True) if conditional else \
+                generator(noise, training=True)
+            fake_output = discriminator([generated_images, labels], training=True) if conditional else \
+                discriminator(generated_images, training=True)
             gen_loss = generator_loss(fake_output)
             gen_loss_tot += gen_loss
             # gen_loss = alternative_gen_loss(generated_images, images)
 
             if gen_step == ratio_gen_dis-1:
-                real_output = discriminator(images, training=True)
+                real_output = discriminator([images, labels], training=True) if conditional else \
+                    discriminator(images, training=True)
                 dis_loss = discriminator_loss(real_output, fake_output)
                 batch_logs['dis']['dis_loss'] = dis_loss
 
@@ -390,7 +423,8 @@ os.system(cp_command.format("config.yaml"))
 
 # We will reuse this seed overtime (so it's easier)
 # to visualize progress in the animated GIF)
-seed = tf.random.normal([25, gconf['input_neurons']])
+seed = tf.random.normal([conf['num_classes']**2, gconf['input_neurons']]) if conditional \
+    else tf.random.normal([25, gconf['input_neurons']])
 
 # callbacks.set_params(batch_size, num_epochs, num_iterations, train_len, 1, do_validation, None,)  # not sure bout metrics=None
 callbacks.stop_training(False)
@@ -429,18 +463,22 @@ for epoch in range(num_epochs):
     callbacks.on_epoch_begin(epoch, epoch_logs)
     progbar.on_epoch_begin(epoch, epoch_logs)
     # shuffle indices pls
-    np.random.shuffle(train_images)
+    indices = np.arange(train_len)
+    np.random.shuffle(indices)
     for iteration in range(num_train_it):
-        x_ = train_images[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]
+        x_ = train_images[indices[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]]
+        labels = train_labels[indices[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]] if \
+            conditional else None
         # x_ = jitter(x_, conf['jitter_padding'])
         #for i in range(2):
             #if randint(0, 1):
                 #x_ = np.flip(x_, axis=i + 1)  # randomly flip x- and y-axis
         if False:
             img_np3 = x_[0, :, :, 0]
-            plt.imshow(img_np3, cmap='gray', vmin=0, vmax=1)
+            plt.imshow(img_np3, cmap='gray', vmin=conf['vmin'], vmax=conf['vmax'])
+            plt.xlabel(np.argmax(labels[0]))
             plt.show()
-        gen_loss, dis_loss = train_step(x_, generator, discriminator, iteration, progbar)
+        gen_loss, dis_loss = train_step(x_, labels, generator, discriminator, iteration, progbar)
         gen_losses += gen_loss
         dis_losses += dis_loss
 
@@ -452,7 +490,7 @@ for epoch in range(num_epochs):
         dis_val_loss = 0
         gen_val_loss = 0
         if image_size == 28:
-            np_img_tensor = create_complete_images(generator, conf['vmin'], conf['num_val_images'])
+            np_img_tensor = create_complete_images(generator, conf['vmin'], conf['num_val_images'], conf['num_classes'])
             if conf['val_model_kind'] == "rf":
                 hist_list = []
                 for i in range(conf['num_val_images']):
@@ -473,11 +511,15 @@ for epoch in range(num_epochs):
 
         for iteration in range(num_test_it):
             x_ = test_images[iteration*batch_size:min(test_len, (iteration+1)*batch_size)]
-            real_output = discriminator(x_, training=False)
+            labels = test_labels[iteration*batch_size:min(test_len, (iteration+1)*batch_size)] if conditional else None
+            real_output = discriminator([x_, labels], training=False) if conditional else discriminator(x_,
+                                                                                                      training=False)
             if image_size == 125:
                 noise = tf.random.normal([batch_size, gconf['input_neurons']])
-                generated_images = generator(noise, training=False)
-                fake_output = discriminator(generated_images, training=False)
+                generated_images = generator([noise, labels], training=False) if conditional else \
+                    generator(noise, training=False)
+                fake_output = discriminator([generated_images, labels], training=False) if conditional else \
+                    discriminator(generated_images, training=False)
                 val_output = val_model(generated_images, training=False)/8
                 gen_val_loss += generator_loss(val_output)/num_test_it
                 dis_val_loss += discriminator_loss(real_output, fake_output)

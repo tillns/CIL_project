@@ -10,10 +10,9 @@ def binarize(images):
 
 def generate_samples(sess, X, h, pred, conf, suff):
     print("Generating Sample Images...")
-    n_row, n_col = 10,10
+    n_row, n_col = conf.num_classes, conf.num_classes
     samples = np.zeros((n_row*n_col, conf.img_height, conf.img_width, conf.channel), dtype=np.float32)
-    # TODO make it generic
-    labels = one_hot(np.array([0,1,2,3,4,5,6,7,8,9]*10), conf.num_classes)
+    labels = one_hot(np.array(list(range(conf.num_classes))*conf.num_classes), conf.num_classes)
 
     for i in range(conf.img_height):
         for j in range(conf.img_width):

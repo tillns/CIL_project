@@ -2,7 +2,7 @@ import os
 import numpy as np
 import argparse
 from PIL import Image
-from create_complete_images import score_tensor
+from create_complete_images import score_tensor_with_rf
 from skimage import io
 
 
@@ -25,4 +25,4 @@ if __name__ == '__main__':
             img_np = np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels))
             image_list.append(img_np)
     image_tensor = np.stack(image_list)
-    score_tensor(image_tensor)
+    score_tensor_with_rf(image_tensor)

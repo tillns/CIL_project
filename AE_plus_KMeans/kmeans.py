@@ -25,7 +25,7 @@ image_size = 28
 image_channels = 1
 home_dir = os.path.expanduser("~")
 ae_dir = os.path.join(home_dir, "CIL_project/AE_plus_KMeans")
-num_clusters = 10
+num_clusters = 5
 
 image_directory = os.path.join(home_dir, "CIL_project/extracted_stars_Hannes")
 clustered_img_dir_base = os.path.join(ae_dir, "clustered_images/{}".format(datetime.now().strftime("%Y%m%d-%H%M%S")))
@@ -64,7 +64,8 @@ if __name__ == '__main__':
         json_config = json_file.read()
     encoder = tf.keras.models.model_from_json(json_config)
     x = load_dataset()
-    latent = encoder(x).numpy()
+    # seems to be no problem for the GPU to just encode the whole dataset (13k, 28, 28, 1)
+    latent = encoder(x, training=False).numpy()
     latent = np.reshape(latent, (latent.shape[0], -1))
     kmeans = KMeans(n_clusters=num_clusters, n_init=20, n_jobs=4)
     # Train K-Means.
