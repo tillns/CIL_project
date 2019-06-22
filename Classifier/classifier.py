@@ -329,10 +329,13 @@ def get_model():
             model.add(getNormLayer(conf['norm_type']))
             model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
             if downsample and conf['use_max_pool']:
-                model.add(tf.keras.MaxPool2D())
+                model.add(tf.keras.layers.MaxPooling2D(pool_size=(conf['pooling_patch_size'], conf['pooling_patch_size']), strides=None, padding='same', data_format=None))
         if features < conf['max_features']:
-            features *= 2
-        res = res // conf['downsample_stride']
+            features *= conf['pooling_patch_size']
+        if conf['use_max_pool']:
+            res = res // 2
+        else:
+            res = res // conf['downsample_stride']
 
     model.add(tf.keras.layers.Flatten())
     for i in range(1, conf['num_dense_layers']):
