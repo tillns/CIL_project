@@ -18,6 +18,7 @@ from sklearn.linear_model import LinearRegression
 import csv
 import yaml
 import gc
+import argparse
 
 
 print(tf.__version__)
@@ -65,20 +66,29 @@ def test_model():
         plt.xlabel("{}\no: {}\ny: {}".format(label_list[ind][0], score.numpy()[0, 0], label))
     plt.show()
 
+parser = argparse.ArgumentParser()
+if __name__ == '__main__':
+
+    parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
+    parser.add_argument('-T', '--test_on_query', type=bool, default=False)
+    parser.add_argument('-R', '--restore_ckpt', type=bool, default=False, help="Can't be false if test_on_query is True")
+    parser.add_argument('-P', '--ckpt_path', type=str, default=None, help="Complete path to ckpt file ending with .data_00001...")
+
+args = parser.parse_args()
 
 with open("config.yaml", 'r') as stream:
     conf = yaml.full_load(stream)
 
-test_on_query = False
-restore_checkpoint = test_on_query
+test_on_query = args.test_on_query
+restore_checkpoint = True if test_on_query else args.restore_ckpt
 image_size = conf['image_size']
 image_channels = 1
 home_dir = os.path.expanduser("~")
 classifier_dir = os.path.join(home_dir, "CIL_project/Classifier")
 scored_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored")
 label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored.csv")
-# query_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/query")
-query_directory = os.path.join(home_dir, "CIL_project/GAN/third/compl_images")
+query_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/query")
+# query_directory = os.path.join(home_dir, "CIL_project/GAN/third/compl_images")
 image_directory = query_directory if test_on_query else scored_directory
 percentage_train = conf['percentage_train'] if not test_on_query else 1
 print("Searching for images in {}".format(image_directory))
@@ -86,7 +96,7 @@ use_dummy_dataset = False
 period_to_save_cp = conf['period_to_save_cp'] if percentage_train == 1 else 1
 tot_num_epochs = conf['tot_num_epochs']
 label_range = 8  # labels go from 0 to 8
-save_np_to_mem = image_size > 250
+save_np_to_mem = image_size > 250 and not args.is_cluster
 
 try:
     f = open(label_path, 'r')
@@ -297,6 +307,8 @@ def get_model():
         kernel_regularizer = tf.keras.regularizers.l2(conf['weight_reg_factor'])
     else:
         kernel_regularizer = tf.keras.regularizers.l1(conf['weight_reg_factor'])
+    if conf['use_max_pool']:
+        conf['downsample_stride'] = 1
 
 
     model = tf.keras.Sequential(name='till_model')
@@ -307,13 +319,17 @@ def get_model():
                              input_shape=(res, res, image_channels)))  # 125 -> 128 or maybe 25 -> 32...
             res = closestexpres
         for i in range(conf['num_convs_per_downsample']):
-            strides = conf['downsample_stride'] if i == 0 else 1
+            downsample = (i == 0 and conf['downsample_with_first_conv']) or \
+                         (i == conf['num_convs_per_downsample'] - 1 and not conf['downsample_with_first_conv'])
+            strides = conf['downsample_stride'] if downsample else 1
             model.add(tf.keras.layers.Conv2D(features, (conf['kernel'], conf['kernel']),
                                              kernel_regularizer=kernel_regularizer, padding='same', strides=strides,
                                              use_bias=conf['use_bias'], input_shape=(res, res, image_channels)))
             # depth wrong for following convs, but doesn't seem to matter, so I'll let it be
             model.add(getNormLayer(conf['norm_type']))
             model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
+            if downsample and conf['use_max_pool']:
+                model.add(tf.keras.MaxPool2D())
         if features < conf['max_features']:
             features *= 2
         res = res // conf['downsample_stride']
@@ -379,10 +395,13 @@ def get_specific_cp():
 """Choose which model to use"""
 
 # checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
-checkpoint_dir = os.path.join(classifier_dir, "checkpoints")
+checkpoint_dir = os.path.join(classifier_dir, "checkpoints/res{}".format(image_size))
 
 if restore_checkpoint:
-    epoch_start, specific_path = get_specific_cp()
+    if args.ckpt_path is not None:
+        epoch_start, specific_path = get_epoch_and_path(args.ckpt_path)
+    else:
+        epoch_start, specific_path = get_specific_cp()
     if specific_path is not None:
         # model_path = os.path.join("/".join(specific_path.split("/")[:-1]), "model.h5")
         model_path = os.path.join("/".join(specific_path.split("/")[:-1]), "model_config.json")
@@ -477,9 +496,9 @@ else:
 
     aug = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=conf['rot_range'],
                                                           zoom_range=0,  # used to be 0.15
-                                                          width_shift_range=0.2, height_shift_range=0.2,
+                                                          width_shift_range=0.2, height_shift_range=0.2,  # used to be 0.2 both
                                                           shear_range=0,  # used to be 0.15
-                                                          horizontal_flip=True, vertical_flip=True, fill_mode="nearest",
+                                                          horizontal_flip=True, vertical_flip=True, fill_mode="nearest",  # both flips were True
                                                           validation_split=0)
     val = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=0,
                                                           zoom_range=0,
