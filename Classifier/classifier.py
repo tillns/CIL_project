@@ -307,13 +307,12 @@ def get_model():
         kernel_regularizer = tf.keras.regularizers.l2(conf['weight_reg_factor'])
     else:
         kernel_regularizer = tf.keras.regularizers.l1(conf['weight_reg_factor'])
-    if conf['use_max_pool']:
-        conf['downsample_stride'] = 1
+    downsample_stride = 1 if conf['use_max_pool'] else conf['downsample_factor']
 
 
     model = tf.keras.Sequential(name='till_model')
     while res > conf['min_res']:
-        if res % conf['downsample_stride'] != 0:
+        if res % conf['downsample_factor'] != 0:
             closestexpres = min(resexp, key=lambda x: abs(x - res))
             model.add(Padder(padding=closestexpres - res,
                              input_shape=(res, res, image_channels)))  # 125 -> 128 or maybe 25 -> 32...
@@ -321,7 +320,7 @@ def get_model():
         for i in range(conf['num_convs_per_downsample']):
             downsample = (i == 0 and conf['downsample_with_first_conv']) or \
                          (i == conf['num_convs_per_downsample'] - 1 and not conf['downsample_with_first_conv'])
-            strides = conf['downsample_stride'] if downsample else 1
+            strides = downsample_stride if downsample else 1
             model.add(tf.keras.layers.Conv2D(features, (conf['kernel'], conf['kernel']),
                                              kernel_regularizer=kernel_regularizer, padding='same', strides=strides,
                                              use_bias=conf['use_bias'], input_shape=(res, res, image_channels)))
@@ -329,13 +328,10 @@ def get_model():
             model.add(getNormLayer(conf['norm_type']))
             model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
             if downsample and conf['use_max_pool']:
-                model.add(tf.keras.layers.MaxPooling2D(pool_size=(conf['pooling_patch_size'], conf['pooling_patch_size']), strides=None, padding='same', data_format=None))
+                model.add(tf.keras.layers.MaxPool2D(pool_size=conf['downsample_factor']))
         if features < conf['max_features']:
-            features *= conf['pooling_patch_size']
-        if conf['use_max_pool']:
-            res = res // 2
-        else:
-            res = res // conf['downsample_stride']
+            features *= 2
+        res = res // conf['downsample_factor']
 
     model.add(tf.keras.layers.Flatten())
     for i in range(1, conf['num_dense_layers']):
