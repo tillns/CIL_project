@@ -140,7 +140,6 @@ def load_dataset():
         if not "use_fft" in conf:
             conf['use_fft'] = False
         fft_str = "_fft" if conf['use_fft'] else ""
-        max_val = 497.75647  # for fft
         np_data_path = os.path.join(classifier_dir,"numpy_data/{}_p{:.1f}_s{}{}.dat".format('{}', percentage_train,
                                                                                             image_size, fft_str))
         trainset_path = np_data_path.format("queryset") if test_on_query else np_data_path.format("trainset")
@@ -158,7 +157,7 @@ def load_dataset():
                 img_np = np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels))
                 if conf['use_fft']:
                     # 442.30010986328125 is the maximum along the whole dataset
-                    img_np = 20*np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np)))**2+np.power(1.0, -20)) / max_val
+                    img_np = 20*np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np)))**2+np.power(1.0, -20))
                 else:
                     img_np = img_np / 255
             if num < int(dataset_len * percentage_train):
@@ -172,14 +171,11 @@ def load_dataset():
                     test_images[num - int(dataset_len * percentage_train)] = img_np
             print("\rLoaded image {}/{}".format(num + 1, dataset_len), end="")
         print("")
-        # following 4 lines gave min_val = 0 and max_val = 497.75647 as used above
-        # max_test = -1000 if percentage_train == 1 else np.max(test_images)
-        # min_test = 1000 if percentage_train == 1 else np.min(test_images)
-        # max_val = max(np.max(train_images), max_test)
-        # min_val = min(np.min(train_images), min_test)
-
-
-
+        if conf['use_fft']:
+            max_val = max(np.max(train_images), np.max(test_images))
+            min_val = min(np.min(train_images), np.min(test_images))
+            train_images = (train_images + min_val) / (max_val - min_val)
+            test_images = (test_images + min_val)/ (max_val - min_val)
     else:
         train_labels = np.ones((train_len, 1))
         test_labels = np.ones((test_len, 1))
@@ -466,7 +462,7 @@ if restore_checkpoint:
         # model = tf.keras.models.load_model(os.path.join(model_path), custom_objects={'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer':SigmoidLayer})
         with open(model_path) as json_file:
             json_config = json_file.read()
-        custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer, 'ResBlock': ResBlock}
+        custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer}
         if conf['norm_type'] == 'pixel':
             custom_objects['Pixel_norm'] = Pixel_norm
         model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)

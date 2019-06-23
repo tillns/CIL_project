@@ -1,5 +1,5 @@
 # general conf
-image_size: 1000
+image_size: 250
 percentage_train: 0.8
 max_elements: 9600
 period_to_save_cp: 5
@@ -10,11 +10,11 @@ lr: 0.001
 train_loss_type: MSE  # CE, MSE or MAE
 val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
 rot_range: 0
-use_fft: True
+use_fft: False
 
 # model conf
-residual: False
-num_convs_per_block: 4
+residual: True
+num_convs_per_block: 2
 num_blocks_per_res: 1
 downsample_factor: 2
 use_max_pool: False
@@ -22,7 +22,7 @@ downsample_with_first_conv: True
 num_dense_layers: 1
 latent_features: 64
 kernel: 3
-features: 8
+features: 4
 max_features: 32
 norm_type: batch  # batch, pixel or None (couldn't find instance norm)
 min_res: 4
