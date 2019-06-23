@@ -370,7 +370,7 @@ def get_epoch_and_path(path):
 def get_specific_cp():
     while True:
         user_input = input("Enter the path of checkpoint file or leave empty to use latest checkpoint.")
-        if len(user_input) == 0:
+        if len(user_input) == 0 or is_cluster:
             print("Using latest checkpoint from latest directory.")
             specific_path = get_latest_cp()
             break
@@ -426,7 +426,8 @@ if test_on_query:
         conf = yaml.full_load(stream)
     image_size = conf['image_size']
     batch_size = conf['batch_size']
-    test_model()
+    if not is_cluster:
+        test_model()
     load_dataset()
     with open(os.path.join(cp_dir_time, 'query_compl{}.csv'.format(epoch_start)), 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',',
