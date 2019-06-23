@@ -176,6 +176,8 @@ def load_dataset():
             min_val = min(np.min(train_images), np.min(test_images))
             train_images = (train_images + min_val) / (max_val - min_val)
             test_images = (test_images + min_val)/ (max_val - min_val)
+            print("New max: {}".format(max(np.max(train_images), np.max(test_images))))
+            print("New min: {}".format(min(np.min(train_images), np.min(test_images))))
     else:
         train_labels = np.ones((train_len, 1))
         test_labels = np.ones((test_len, 1))
