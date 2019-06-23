@@ -137,7 +137,9 @@ def get_numpy(mode, num_images, path):
 def load_dataset():
     global train_images, train_labels, test_images, test_labels
     if not use_dummy_dataset:
-        fft_str = "_fft" if "use_fft" in conf and conf['use_fft'] else ""
+        if not "use_fft" in conf:
+            conf['use_fft'] = False
+        fft_str = "_fft" if conf['use_fft'] else ""
         np_data_path = os.path.join(classifier_dir,"numpy_data/{}_p{:.1f}_s{}{}.dat".format('{}', percentage_train,
                                                                                             image_size, fft_str))
         trainset_path = np_data_path.format("queryset") if test_on_query else np_data_path.format("trainset")
