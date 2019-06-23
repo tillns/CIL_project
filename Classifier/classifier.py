@@ -137,8 +137,9 @@ def get_numpy(mode, num_images, path):
 def load_dataset():
     global train_images, train_labels, test_images, test_labels
     if not use_dummy_dataset:
-        np_data_path = os.path.join(classifier_dir,
-                                    "numpy_data/{}_p{:.1f}_s{}.dat".format('{}', percentage_train, image_size))
+        fft_str = "_fft" if "use_fft" in conf and conf['use_fft'] else ""
+        np_data_path = os.path.join(classifier_dir,"numpy_data/{}_p{:.1f}_s{}{}.dat".format('{}', percentage_train,
+                                                                                            image_size, fft_str))
         trainset_path = np_data_path.format("queryset") if test_on_query else np_data_path.format("trainset")
         testset_path = np_data_path.format('testset')
         both_paths_exist = save_np_to_mem and os.path.exists(trainset_path) and (percentage_train == 1 or os.path.exists(testset_path))
@@ -152,6 +153,8 @@ def load_dataset():
             if not both_paths_exist:
                 img = Image.open(os.path.join(image_directory, img_list[num])).resize((image_size, image_size))
                 img_np = np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)) / 255
+                if conf['use_fft']:
+                    img_np = 20*np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np)))**2)
             if num < int(dataset_len * percentage_train):
                 train_labels[num] = label_list[num][1]
                 if not both_paths_exist:
@@ -340,6 +343,8 @@ def get_model():
         model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
         if conf['dropout'] > 0:
             model.add(tf.keras.layers.Dropout(conf['dropout']))
+    if conf['num_dense_layers'] == 1:
+        model.add(tf.keras.layers.Dropout(conf['dropout']))
     model.add(tf.keras.layers.Dense(1, use_bias=conf['use_bias'], kernel_regularizer=kernel_regularizer))
     # model.add(SigmoidLayer())
     # model.add(FactorLayer(8))  # to make output range from 0 to 8
@@ -399,6 +404,10 @@ checkpoint_dir = os.path.join(classifier_dir, "checkpoints/res{}".format(image_s
 if restore_checkpoint:
     if args.ckpt_path is not None:
         epoch_start, specific_path = get_epoch_and_path(args.ckpt_path)
+        if os.path.exists(specific_path):
+            specific_path = specific_path[:-len(".data-00000-of-00001")]
+        global cp_dir_time
+        cp_dir_time = os.path.dirname(specific_path)
     else:
         epoch_start, specific_path = get_specific_cp()
     if specific_path is not None:
@@ -426,7 +435,8 @@ if test_on_query:
         conf = yaml.full_load(stream)
     image_size = conf['image_size']
     batch_size = conf['batch_size']
-    test_model()
+    if not args.is_cluster:
+        test_model()
     load_dataset()
     with open(os.path.join(cp_dir_time, 'query_compl{}.csv'.format(epoch_start)), 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',',
