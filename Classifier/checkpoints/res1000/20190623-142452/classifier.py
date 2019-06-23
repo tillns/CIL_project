@@ -171,6 +171,7 @@ def load_dataset():
                     test_images[num - int(dataset_len * percentage_train)] = img_np
             print("\rLoaded image {}/{}".format(num + 1, dataset_len), end="")
         print("")
+        print("Max of fft images: {}".format(max(np.max(train_images), np.max(test_images))))
     else:
         train_labels = np.ones((train_len, 1))
         test_labels = np.ones((test_len, 1))

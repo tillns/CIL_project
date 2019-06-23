@@ -156,8 +156,7 @@ def load_dataset():
                 img = Image.open(os.path.join(image_directory, img_list[num])).resize((image_size, image_size))
                 img_np = np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels))
                 if conf['use_fft']:
-                    # 442.30010986328125 is the maximum along the whole dataset
-                    img_np = 20*np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np)))**2+np.power(1.0, -20)) / 442.30010986328125
+                    img_np = np.abs(np.fft.fftshift(np.fft.fft2(img_np)))**2
                 else:
                     img_np = img_np / 255
             if num < int(dataset_len * percentage_train):
@@ -171,6 +170,7 @@ def load_dataset():
                     test_images[num - int(dataset_len * percentage_train)] = img_np
             print("\rLoaded image {}/{}".format(num + 1, dataset_len), end="")
         print("")
+
     else:
         train_labels = np.ones((train_len, 1))
         test_labels = np.ones((test_len, 1))
