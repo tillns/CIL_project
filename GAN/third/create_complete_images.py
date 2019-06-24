@@ -11,6 +11,7 @@ from random import gauss, randint
 import matplotlib.pyplot as plt
 import joblib
 import math
+from img_scorer import score_tensor_with_rf
 
 image_channels = 1
 image_size = 1000
@@ -46,32 +47,6 @@ def one_hot(batch_y, num_classes):
     y_ = np.zeros((batch_y.shape[0], num_classes))
     y_[np.arange(batch_y.shape[0]), batch_y] = 1
     return y_
-
-def score_tensor_with_rf(image_tensor):
-    hist_list = []
-    for i in range(image_tensor.shape[0]):
-        hist_list.append(np.histogram(image_tensor[i], bins=10)[0])
-    hist_tensor = np.stack(hist_list)
-    val_model = joblib.load(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"), "random_forest_10_0.9.sav"))
-    score = val_model.predict(hist_tensor)
-    label_eight = np.ones((image_tensor.shape[0], 1)) * 8
-    gen_val_loss = tf.reduce_mean(tf.square(score - label_eight))
-    #print("MSE loss of generated images: {}".format(gen_val_loss))
-    return gen_val_loss
-
-def score_tensor_with_keras_model(image_tensor, model, batch_size):
-    score_list = []
-    for it in range(math.ceil(image_tensor.shape[0]/batch_size)):
-        x_ = image_tensor[it*batch_size:min((it+1)*batch_size, image_tensor.shape[0])]
-        score_list.append(model(x_, training=False).numpy())
-    score_tensor = np.concatenate(score_list)
-    label_eight = np.ones((image_tensor.shape[0], 1)) * 8
-    score = tf.reduce_mean(tf.square(score_tensor - label_eight))
-    return score
-
-
-
-
 
 def create_complete_images(gen_model, vmin=0, num_images_to_create=100, num_classes=1):
     global num_stars_per_pic
