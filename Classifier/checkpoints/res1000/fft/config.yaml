@@ -5,7 +5,7 @@ max_elements: 9600
 period_to_save_cp: 5
 num_epochs_for_lin_regression: 40
 tot_num_epochs: 400
-batch_size: 50
+batch_size: 85
 lr: 0.001
 train_loss_type: MSE  # CE, MSE or MAE
 val_loss_type: MSE # same choice, but should be kept constant (MSE) for all configs
@@ -13,9 +13,7 @@ rot_range: 0
 use_fft: True
 
 # model conf
-residual: False
-num_convs_per_block: 4
-num_blocks_per_res: 1
+num_convs_per_downsample: 3
 downsample_factor: 2
 use_max_pool: False
 downsample_with_first_conv: True
