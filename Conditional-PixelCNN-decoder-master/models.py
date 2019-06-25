@@ -4,13 +4,8 @@ from layers import *
 class PixelCNN(object):
     def __init__(self, X, conf, full_horizontal=True, h=None):
         self.X = X
-        if conf.data == "mnist":
-            self.X_norm = X
-        else:
-            '''
-                Image normalization for CIFAR-10 was supposed to be done here
-            '''
-            self.X_norm = X
+        self.X_norm = X
+
         v_stack_in, h_stack_in = self.X_norm, self.X_norm
 
         if conf.conditional is True:
@@ -45,27 +40,11 @@ class PixelCNN(object):
         with tf.variable_scope("fc_1"):
             fc1 = GatedCNN([1, 1, conf.f_map], h_stack_in, True, gated=False, mask='b').output()
 
-        if conf.data == "mnist":
-            with tf.variable_scope("fc_2"):
-                self.fc2 = GatedCNN([1, 1, 1], fc1, True, gated=False, mask='b', activation=False).output()
-            self.loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.fc2, labels=self.X))
-            self.pred = tf.nn.sigmoid(self.fc2)
-        else:
-            color_dim = 256
-            with tf.variable_scope("fc_2"):
-                self.fc2 = GatedCNN([1, 1, conf.channel * color_dim], fc1, True, gated=False, mask='b', activation=False).output()
-                self.fc2 = tf.reshape(self.fc2, (-1, color_dim))
+        with tf.variable_scope("fc_2"):
+            self.fc2 = GatedCNN([1, 1, 1], fc1, True, gated=False, mask='b', activation=False).output()
+        self.loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.fc2, labels=self.X))
+        self.pred = tf.nn.sigmoid(self.fc2)
 
-            self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(self.fc2, tf.cast(tf.reshape(self.X, [-1]), dtype=tf.int32)))
-
-            '''
-                Since this code was not run on CIFAR-10, I'm not sure which 
-                would be a suitable way to generate 3-channel images. Below are
-                the 2 methods which may be used, with the first one (self.pred)
-                being more likely.
-            '''
-            self.pred_sampling = tf.reshape(tf.multinomial(tf.nn.softmax(self.fc2), num_samples=1, seed=100), tf.shape(self.X))
-            self.pred = tf.reshape(tf.argmax(tf.nn.softmax(self.fc2), dimension=tf.rank(self.fc2) - 1), tf.shape(self.X))
 
 
 class ConvolutionalEncoder(object):

@@ -1,3 +1,24 @@
+# Custom README for CIL project
+
+The code was downloaded from [here](https://github.com/tillns/CIL_project/tree/master/Conditional-PixelCNN-decoder-master). We crossed out the MNIST and CIFAR10 options and replaced them with the stars dataset. The dataset may be created with the star_extractor project. However, another dataset (of 28x28 pixels) may be used. The model can be used in either conditional or uncoditional setting, the autoencoder setting does nnot work. The training can be started with
+- **Unconditional image generation**:  
+    ```
+    python main.py
+    ```
+
+- **Conditional image generation based on class labels**: 
+    ```
+    python main.py --model=conditional
+    ``` 
+- **Model trained on different data path**: 
+    ```
+    python main.py --data_path=custom/data/path
+    ``` 
+
+Please note that a different data directory has to contain directly the images of size 28x28 for the unconditional setting and one folder for each category including the images of size 28x28 for the conditional setting.
+
+Now follows the original README from the code:
+
 # Image Generation with Gated PixelCNN Decoders
 
 This is a Tensorflow implementation of [Conditional Image Generation with PixelCNN Decoders](https://arxiv.org/abs/1606.05328) which introduces the Gated PixelCNN model based on PixelCNN architecture originally mentioned in [Pixel Recurrent Neural Networks](https://arxiv.org/abs/1601.06759). The model can be conditioned on latent representation of labels or images to generate images accordingly. Images can also be modelled unconditionally. It can also act as a powerful decoder and can replace deconvolution (transposed convolution) in Autoencoders and GANs. A detailed summary of the paper can be found [here](https://gist.github.com/anantzoid/b2dca657003998027c2861f3121c43b7). 

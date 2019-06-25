@@ -21,8 +21,7 @@ def generate_samples(sess, X, h, pred, conf, suff):
                 if conf.conditional is True:
                     data_dict[h] = labels
                 next_sample = sess.run(pred, feed_dict=data_dict)
-                if conf.data == "mnist":
-                    next_sample = binarize(next_sample)
+                next_sample = binarize(next_sample)
                 samples[:, i, j, k] = next_sample[:, i, j, k]
 
     save_images(samples, n_row, n_col, conf, suff)
@@ -32,17 +31,14 @@ def generate_ae(sess, encoder_X, decoder_X, y, data, conf, suff=''):
     print("Generating Sample Images...")
     n_row, n_col = 10,10
     samples = np.zeros((n_row*n_col, conf.img_height, conf.img_width, conf.channel), dtype=np.float32)
-    if conf.data == 'mnist':
-        labels = binarize(data.train.next_batch(n_row*n_col)[0].reshape(n_row*n_col, conf.img_height, conf.img_width, conf.channel))
-    else:
-        labels = get_batch(data, 0, n_row*n_col) 
+    labels = binarize(data.train.next_batch(n_row*n_col)[0].reshape(n_row*n_col, conf.img_height, conf.img_width, conf.channel))
+
 
     for i in range(conf.img_height):
         for j in range(conf.img_width):
             for k in range(conf.channel):
                 next_sample = sess.run(y, {encoder_X: labels, decoder_X: samples})
-                if conf.data == 'mnist':
-                    next_sample = binarize(next_sample)
+                next_sample = binarize(next_sample)
                 samples[:, i, j, k] = next_sample[:, i, j, k]
 
     save_images(samples, n_row, n_col, conf, suff)
@@ -50,14 +46,9 @@ def generate_ae(sess, encoder_X, decoder_X, y, data, conf, suff=''):
 
 def save_images(samples, n_row, n_col, conf, suff):
     images = samples 
-    if conf.data == "mnist":
-        images = images.reshape((n_row, n_col, conf.img_height, conf.img_width))
-        images = images.transpose(1, 2, 0, 3)
-        images = images.reshape((conf.img_height * n_row, conf.img_width * n_col))
-    else:
-        images = images.reshape((n_row, n_col, conf.img_height, conf.img_width, conf.channel))
-        images = images.transpose(1, 2, 0, 3, 4)
-        images = images.reshape((conf.img_height * n_row, conf.img_width * n_col, conf.channel))
+    images = images.reshape((n_row, n_col, conf.img_height, conf.img_width))
+    images = images.transpose(1, 2, 0, 3)
+    images = images.reshape((conf.img_height * n_row, conf.img_width * n_col))
 
     filename = datetime.now().strftime('%Y_%m_%d_%H_%M')+suff+".png"
     pil_img = Image.fromarray(np.uint8(images*255), 'L')
@@ -82,7 +73,7 @@ def one_hot(batch_y, num_classes):
 
 
 def makepaths(conf):
-    ckpt_full_path = os.path.join(conf.ckpt_path, "data=%s_bs=%d_layers=%d_fmap=%d"%(conf.data, conf.batch_size, conf.layers, conf.f_map))
+    ckpt_full_path = os.path.join(conf.ckpt_path, "data=%s_bs=%d_layers=%d_fmap=%d"%("stars", conf.batch_size, conf.layers, conf.f_map))
     if not os.path.exists(ckpt_full_path):
         os.makedirs(ckpt_full_path)
     conf.ckpt_file = os.path.join(ckpt_full_path, "model.ckpt")

@@ -19,6 +19,11 @@ import csv
 import yaml
 import gc
 import argparse
+from tensorflow.python.keras.utils.data_utils import Sequence
+import cv2
+from albumentations import (
+    Compose, HorizontalFlip, ShiftScaleRotate, VerticalFlip, DualTransform
+)
 
 
 print(tf.__version__)
@@ -70,7 +75,7 @@ parser = argparse.ArgumentParser()
 if __name__ == '__main__':
 
     parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
-    parser.add_argument('-T', '--test_on_query', type=bool, default=False)
+    parser.add_argument('-T', '--test_on_query', type=bool, default=True)
     parser.add_argument('-R', '--restore_ckpt', type=bool, default=False, help="Can't be false if test_on_query is True")
     parser.add_argument('-P', '--ckpt_path', type=str, default=None, help="Complete path to ckpt file ending with .data_00001...")
 
@@ -97,6 +102,7 @@ period_to_save_cp = conf['period_to_save_cp'] if percentage_train == 1 else 1
 tot_num_epochs = conf['tot_num_epochs']
 label_range = 8  # labels go from 0 to 8
 save_np_to_mem = image_size > 250 and not args.is_cluster
+max_val_fft = 497.75647
 
 try:
     f = open(label_path, 'r')
@@ -134,15 +140,27 @@ def get_numpy(mode, num_images, path):
     return np.zeros((num_images, image_size, image_size, 1), dtype=np.float32)
 
 
+class FFT_augm(DualTransform):
+
+    def __init__(self, max_val_fft, use_fft=True):
+        super(FFT_augm, self).__init__(True, 1)
+        self.max_val_fft = max_val_fft
+        self.use_fft = use_fft
+
+    def apply(self, img, **params):
+        if self.use_fft:
+            img_np = 20*np.log(np.abs(np.fft.fftshift(np.fft.fft2(img)))**2+np.power(1.0, -20)) / self.max_val_fft
+        else:
+            img_np = img / 255
+        return img_np
+
 def load_dataset():
     global train_images, train_labels, test_images, test_labels
     if not use_dummy_dataset:
         if not "use_fft" in conf:
             conf['use_fft'] = False
-        fft_str = "_fft" if conf['use_fft'] else ""
-        max_val_fft = 497.75647  # for fft
-        np_data_path = os.path.join(classifier_dir,"numpy_data/{}_p{:.1f}_s{}{}.dat".format('{}', percentage_train,
-                                                                                            image_size, fft_str))
+        np_data_path = os.path.join(classifier_dir,"numpy_data/{}_p{:.1f}_s{}.dat".format('{}', percentage_train,
+                                                                                            image_size))
         trainset_path = np_data_path.format("queryset") if test_on_query else np_data_path.format("trainset")
         testset_path = np_data_path.format('testset')
         both_paths_exist = save_np_to_mem and os.path.exists(trainset_path) and (percentage_train == 1 or os.path.exists(testset_path))
@@ -156,10 +174,10 @@ def load_dataset():
             if not both_paths_exist:
                 img = Image.open(os.path.join(image_directory, img_list[num])).resize((image_size, image_size))
                 img_np = np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels))
-                if conf['use_fft']:
-                    img_np = 20*np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np)))**2+np.power(1.0, -20)) / max_val_fft
-                else:
-                    img_np = img_np / 255
+                #if conf['use_fft']:
+                    #img_np = 20*np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np)))**2+np.power(1.0, -20)) / max_val_fft
+                #else:
+                    #img_np = img_np / 255
             if num < int(dataset_len * percentage_train):
                 train_labels[num] = label_list[num][1]
                 if not both_paths_exist:
@@ -360,7 +378,32 @@ class ResBlock(tf.keras.layers.Layer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-# params for model 1
+class Augm_Sequence(Sequence):
+    # set y_set to None for test set
+    def __init__(self, x_set, y_set, batch_size, augmentations, shuffle=False):
+        self.x, self.y = x_set, y_set
+        self.batch_size = batch_size
+        self.augment = augmentations
+        self.shuffle = shuffle
+        self.indices = list(range(self.x.shape[0]))
+
+    def __len__(self):
+        return int(np.ceil(self.x.shape[0] / batch_size))
+
+    def __getitem__(self, idx):
+        max_idx = min(self.x.shape[0], (idx + 1)*self.batch_size)
+        batch_x = self.x[self.indices[idx * self.batch_size:max_idx]]
+        x_stacked = np.float32(np.stack([self.augment(image=x)["image"] for x in batch_x], axis=0))
+        if self.y is not None:
+            batch_y = self.y[self.indices[idx * self.batch_size:max_idx]]
+            return x_stacked, np.array(batch_y)
+        return x_stacked, None
+
+    def on_epoch_end(self):
+        if self.shuffle:
+            np.random.shuffle(self.indices)
+
+
 def get_model():
     features = conf['features']
     last_features = image_channels
@@ -485,14 +528,16 @@ if test_on_query:
     if not args.is_cluster:
         test_model()
     load_dataset()
+    AUGMENTATIONS_TEST = Compose([FFT_augm(max_val_fft, conf['use_fft'])])
+    test_data = Augm_Sequence(train_images, None, batch_size, AUGMENTATIONS_TEST, shuffle=False)
     with open(os.path.join(cp_dir_time, 'query_compl{}.csv'.format(epoch_start)), 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
         filewriter.writerow(['Id', 'Predicted'])
         print("Beginning query")
-        num_iterations = math.ceil(train_images.shape[0] / batch_size)
+        num_iterations = test_data.__len__()
         for i in range(num_iterations):
-            current = train_images[i * batch_size:min((i + 1) * batch_size, train_images.shape[0])]
+            current, _ = test_data.__getitem__(i)
             # current = tf.expand_dims(current, 0)
             score = np.clip(model(current, training=False).numpy()[:, 0], 0, label_range)
             for j in range(score.shape[0]):
@@ -562,18 +607,16 @@ else:
         os.system(cp_command.format("classifier.py"))
         os.system(cp_command.format("config.yaml"))
 
-    aug = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=conf['rot_range'],
-                                                          zoom_range=0,  # used to be 0.15
-                                                          width_shift_range=0.2, height_shift_range=0.2,  # used to be 0.2 both
-                                                          shear_range=0,  # used to be 0.15
-                                                          horizontal_flip=True, vertical_flip=True, fill_mode="nearest",  # both flips were True
-                                                          validation_split=0)
-    val = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=0,
-                                                          zoom_range=0,
-                                                          width_shift_range=0, height_shift_range=0, shear_range=0,
-                                                          horizontal_flip=False, vertical_flip=False,
-                                                          fill_mode="nearest",
-                                                          validation_split=0)
+    AUGMENTATIONS_TRAIN = Compose([
+        HorizontalFlip(p=0.5),
+        VerticalFlip(p=0.5),
+        ShiftScaleRotate(
+            shift_limit=0.2, scale_limit=0,
+            rotate_limit=0, border_mode=cv2.BORDER_REFLECT_101, p=0.8),
+        FFT_augm(max_val_fft, conf['use_fft'])
+    ])
+
+    AUGMENTATIONS_VAL = Compose([FFT_augm(max_val_fft, conf['use_fft'])])
 
     counter = 0
     if restore_checkpoint:
@@ -584,13 +627,12 @@ else:
     while True:
         # train the network
         if percentage_train < 1:
-            validation_data = val.flow(test_images, test_labels, batch_size=batch_size, shuffle=False)
+            validation_data = Augm_Sequence(test_images, test_labels, batch_size, AUGMENTATIONS_VAL, shuffle=False)
         else:
             validation_data = None
-        H = model.fit_generator(aug.flow(train_images, train_labels, batch_size=batch_size),
-                                steps_per_epoch=dataset_len // batch_size, initial_epoch=counter,
-                                epochs=counter + epochs, callbacks=[tensorboard_callback, cp_callback], shuffle=True,
-                                validation_data=validation_data)
+        H = model.fit_generator(Augm_Sequence(train_images, train_labels, batch_size, AUGMENTATIONS_TRAIN, shuffle=True),
+                                initial_epoch=counter, epochs=counter + epochs, shuffle=False,  # check shuffle=False
+                                callbacks=[tensorboard_callback, cp_callback], validation_data=validation_data)
         #test_model()
         # save whole model after first run through
         counter += epochs
