@@ -1,27 +1,24 @@
+""" Stars Extractor
+Takes as input --img_dir a directory containing the 1000x1000 star images. You may use
+create_dir_for_labeled_star_images.py to create a directory with only fitting images (without the low-score ones).
+The second input --target_dir specifies where to save the 28x28 extracted star patches. It also prints some basic
+numbers concerning distribution of the stars.
+"""
+
 import os
 import sys
 import numpy as np
 from PIL import Image
 import cv2
 import argparse
-
-
-def get_mean(some_list):
-    return sum(some_list)/len(some_list)
-
-
-def get_std(some_list):
-    sq_sum = 0
-    mean = get_mean(some_list)
-    for el in some_list:
-        sq_sum += pow(el-mean, 2)
-    return np.sqrt(sq_sum/(len(some_list)-1))
+from stars_clustered_distribution import get_mean, get_std
 
 
 def _extract_stars_28x28(image):
     """ Extracts stars from an image
 
-    Detects all stars within the given image, extracts them and centers them within patches of size 28x28 with a black background.
+    Detects all stars within the given image, extracts them and centers them within patches of size 28x28 with a black
+    background.
 
 
     Parameters
@@ -79,8 +76,10 @@ def _extract_stars_28x28(image):
 if __name__ == '__main__':
     home_dir = os.path.expanduser("~")
     parser = argparse.ArgumentParser()
-    parser.add_argument('--img_dir', type=str, default=os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3"))
-    parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir, "CIL_project/extracted_stars/labeled1_and_scoredover3"))
+    parser.add_argument('--img_dir', type=str, default=os.path.join(home_dir,
+                        "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3"))
+    parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir,
+                        "CIL_project/extracted_stars/labeled1_and_scoredover3"))
     args = parser.parse_args()
 
     img_dir = args.img_dir

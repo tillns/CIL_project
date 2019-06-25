@@ -608,13 +608,12 @@ else:
         os.system(cp_command.format("config.yaml"))
 
     AUGMENTATIONS_TRAIN = Compose([
-
+        FFT_augm(max_val_fft, conf['use_fft']),
         HorizontalFlip(p=0.5),
         VerticalFlip(p=0.5),
         ShiftScaleRotate(
             shift_limit=0.2, scale_limit=0,
-            rotate_limit=0, border_mode=cv2.BORDER_REFLECT_101, p=0.8),
-        FFT_augm(max_val_fft, conf['use_fft'])
+            rotate_limit=0, border_mode=cv2.BORDER_REFLECT_101, p=0.8)
 
     ])
 
