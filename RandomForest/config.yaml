@@ -1,0 +1,31 @@
+histogram_type : ROI
+
+# specify histograms to include
+ROI_options:
+  whole_img:
+    include: True
+    prepr_fft: True
+    num_bins: 90
+
+  quarter_img:
+    include: True
+    prepr_fft: True
+    num_bins: 30
+
+  radial:
+    include: True
+    prepr_fft: True
+    num_bins:
+            - 30
+            - 60
+            - 60
+    radii:
+         - 150
+         - - 150
+           - 300
+         - -300
+
+  grad:
+    include: False
+    prepr_fft: True
+    num_bins: 36
