@@ -398,7 +398,7 @@ def _compute_histogram_from_mask(mask, image, num_bins, range):
     # Apply binary mask to your array, you will get array with shape (N, C)
     region = image[mask]
 
-    hist, _ = np.histogram(region[..., 0].ravel(), bins=num_bins, range=range)
+    hist, _ = np.histogram(region, bins=num_bins, range=range)
     return hist
 
 

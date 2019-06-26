@@ -11,6 +11,8 @@ train_loss_type: MAE  # CE, MSE or MAE
 val_loss_type: MAE # same choice, but should be kept constant (MSE) for all configs
 rot_range: 0
 use_fft: True
+# True: preprocess dataset with transform (fft or /255). False: apply transform dynamically after augmentation
+transform_before: True
 
 # model conf
 residual: False
