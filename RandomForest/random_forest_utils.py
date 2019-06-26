@@ -24,6 +24,7 @@ import math
 import yaml
 
 import pywt
+import compute_hist
 
 def get_train_data(numpy_data_directory, data_directory, num_features, split_ratio):
     """Gets the preprocessed train data

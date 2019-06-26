@@ -6,7 +6,7 @@ the scores for a query data set and saves them to a file.
 """
 
 from argparse import ArgumentParser
-from random_forest_utils import get_train_data, get_test_data, get_query_data
+from random_forest_utils import get_train_data, get_test_data, get_query_data, get_train_and_test_data
 import sklearn.ensemble
 import sklearn.model_selection
 import sklearn.metrics
@@ -54,7 +54,8 @@ def train_model(arguments):
     num_features = arguments.num_features
     split_ratio = arguments.split_ratio
 
-    train_features, train_labels = get_train_data(numpy_data_directory, data_directory, num_features, split_ratio)
+    train_features, train_labels, test_features, test_labels = get_train_and_test_data(numpy_data_directory, data_directory,
+                                                                                       num_features, split_ratio)
 
 
     base_model = sklearn.ensemble.RandomForestRegressor(criterion="mae", oob_score=True, random_state = arguments.random_seed)
@@ -67,7 +68,6 @@ def train_model(arguments):
     # save model to directory
     joblib.dump(ml_model, _model_file_path(numpy_data_directory, num_features, split_ratio))
 
-    test_features, test_labels = get_test_data(numpy_data_directory, data_directory, num_features, split_ratio)
 
     print("Predicting test set...")
     predictions = ml_model.predict(test_features)
