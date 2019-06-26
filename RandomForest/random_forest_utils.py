@@ -449,6 +449,54 @@ def _create_circular_mask(h, w, center=None, radius=None, invert_mask=False):
         mask = dist_from_center >= radius if invert_mask else dist_from_center <= radius
     return mask
 
+
+def _create_angle_mask(h, w, angle_l, angle_h):
+    
+    """ Computes a mask for an interval of angles
+
+    Returns an image mask masking all points which are not at an angle inside [angle_l, angle_h] or
+    [angle_l - 180.0, angle_h - 180.0] to the center of the image. The angles are measured counter-clockwise 
+    from the horizontal.
+    
+
+    Paramters
+    ---------
+    h : int
+        The image height
+    w : int
+        The image width
+    angle_l : float
+        The first angle of the interval. Has to be inside [0.0, angle_h].
+    angle_h : float
+        The second angle of the interval. Has to be inside [angle_l, 180.0].
+
+
+    Returns
+    -------
+    mask : array-like
+        The image mask
+    
+    """
+
+    center = [w // 2, h // 2]
+                
+    Y, X = np.ogrid[:h, :w]
+    
+    
+    angle = np.degrees(np.arctan2((-(Y - center[1])), (X-center[0])))
+    
+    
+    mask_angle = ((angle_l <= angle) * (angle <=  angle_h)) + \
+                    ((angle_l - 180.0 <= angle) * (angle <= angle_h - 180.0))
+    
+    mask_angle[w // 2 , h // 2] = True # center
+    
+    
+    mask_angle = np.invert(mask_angle)
+   
+    return mask_angle
+
+
 def _roi_histograms(image, conf):
     roi_conf = conf['ROI_options']
     np_image = np.array(image, dtype=np.uint8)
