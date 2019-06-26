@@ -142,7 +142,7 @@ def get_query_data(numpy_data_directory, data_directory, num_features, split_rat
     print("load query data...")
     try:
         # try loading the data from disk
-        query_features = np.load(os.path.join(numpy_data_directory, _np_query_file_name(num_features, split_ratio) + ".npy"))
+        query_features = np.load(os.path.join(numpy_data_directory, _np_query_file_name(num_features) + ".npy"))
         query_ids = np.load(os.path.join(numpy_data_directory, _np_query_file_name(num_features, True) + ".npy"))
     except:
         # if it doesn't work, recalculate the data and store it to disk
