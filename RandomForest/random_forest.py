@@ -13,13 +13,29 @@ import sklearn.metrics
 import joblib
 import os
 import csv
+import yaml
+from datetime import datetime
 
 parser = ArgumentParser()
 parser.add_argument("--data-directory", required=True, help="Required. The directory where the dataset is stored.")
 parser.add_argument("--numpy-directory", required=True, help="Required. The directory where the numpy data is stored or should be stored. This directory doesn't have to exists yet.")
-parser.add_argument("--num-features", default=10, type=int, help="Optional. The number of features per image taken into consideration. Default is 10")
+parser.add_argument("--num-features", default=0, type=int, help="Optional. The number of features per image taken into consideration. If no number is given, the correct number is concluded from the configuration file")
 parser.add_argument("--split-ratio", default=0.9, type=float, help="Optional. The train-test split ratio of the data to be stored. The value has to be between 0 and 1. Default is 0.9")
 parser.add_argument("--random-seed", default=1234, type=int, help="Optional. A integer to seed the random number generator. Default is 1234")
+
+def _find_num_features(arguments):
+    with open("config.yaml", 'r') as stream:
+        conf = yaml.full_load(stream)
+
+    arguments.num_features = 0
+    for roi_type, type_conf in conf['ROI_options'].items():
+        if type_conf['include']:
+            plus = type_conf['num_bins']
+            if isinstance(plus, list):
+                plus = sum(plus)
+            if roi_type == "quarter_img":
+                plus *= 4
+            arguments.num_features += plus
 
 def train_model(arguments):
     """Trains a random forest classifier
@@ -40,6 +56,7 @@ def train_model(arguments):
 
     train_features, train_labels = get_train_data(numpy_data_directory, data_directory, num_features, split_ratio)
 
+
     base_model = sklearn.ensemble.RandomForestRegressor(criterion="mae", oob_score=True, random_state = arguments.random_seed)
     ml_model = sklearn.model_selection.GridSearchCV(base_model, {"n_estimators": [5, 10, 50, 100]}, verbose=5, scoring='neg_mean_absolute_error')
 
@@ -54,7 +71,14 @@ def train_model(arguments):
 
     print("Predicting test set...")
     predictions = ml_model.predict(test_features)
-    print("Finished Predicting, mean absolute error: {}".format(sklearn.metrics.mean_absolute_error(test_labels, predictions)))
+    mae = sklearn.metrics.mean_absolute_error(test_labels, predictions)
+    print("Finished Predicting, mean absolute error: {}".format(mae))
+    with open("config.yaml", 'r') as stream:
+        conf = yaml.full_load(stream)
+    file = open("{}.txt".format(os.path.join(numpy_data_directory, datetime.now().strftime("%Y%m%d-%H%M%S"))), "w")
+    file.write(str(conf))
+    file.write("MAE: {}".format(mae))
+    file.close()
 
 def create_query_file(arguments):
     """Uses a trained classifier to predict the query results
@@ -140,5 +164,6 @@ def _query_result_path(numpy_data_directory, num_features, split_ratio):
 if __name__ == "__main__":
     arguments = parser.parse_args()
 
+    _find_num_features(arguments)
     train_model(arguments)
     create_query_file(arguments)
