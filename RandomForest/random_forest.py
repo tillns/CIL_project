@@ -15,6 +15,7 @@ import os
 import csv
 import yaml
 from datetime import datetime
+from shutil import copyfile
 
 parser = ArgumentParser()
 parser.add_argument("--data-directory", required=True, help="Required. The directory where the dataset is stored.")
@@ -37,7 +38,7 @@ def _find_num_features(arguments):
                 plus *= 4
             arguments.num_features += plus
 
-def train_model(arguments):
+def train_model(arguments, dump_directory):
     """Trains a random forest classifier
 
     Creates and trains a random forest classifier. It is then used to predict the scores on a test set and is saved to disk for later use.
@@ -66,21 +67,18 @@ def train_model(arguments):
     print("Finished fitting!")
 
     # save model to directory
-    joblib.dump(ml_model, _model_file_path(numpy_data_directory, num_features, split_ratio))
+    joblib.dump(ml_model, _model_file_path(dump_directory, num_features, split_ratio))
 
 
     print("Predicting test set...")
     predictions = ml_model.predict(test_features)
     mae = sklearn.metrics.mean_absolute_error(test_labels, predictions)
     print("Finished Predicting, mean absolute error: {}".format(mae))
-    with open("config.yaml", 'r') as stream:
-        conf = yaml.full_load(stream)
-    file = open("{}.txt".format(os.path.join(numpy_data_directory, datetime.now().strftime("%Y%m%d-%H%M%S"))), "w")
-    file.write(str(conf))
+    file = open("{}.txt".format(os.path.join(dump_directory, "loss")), "w")
     file.write("MAE: {}".format(mae))
     file.close()
 
-def create_query_file(arguments):
+def create_query_file(arguments, dump_directory):
     """Uses a trained classifier to predict the query results
 
     Parameters
@@ -95,27 +93,27 @@ def create_query_file(arguments):
     num_features = arguments.num_features
     split_ratio = arguments.split_ratio
 
-    ml_model = joblib.load(_model_file_path(numpy_data_directory, num_features, split_ratio))
+    ml_model = joblib.load(_model_file_path(dump_directory, num_features, split_ratio))
     query_features, query_ids = get_query_data(numpy_data_directory, data_directory, num_features, split_ratio)
 
     print("Predicting query set...")
     query_predict = ml_model.predict(query_features)
     csv_data = zip(query_ids, query_predict)
 
-    with open(_query_result_path(numpy_data_directory, num_features, split_ratio), 'w') as query_file:
+    with open(_query_result_path(dump_directory, num_features, split_ratio), 'w') as query_file:
         writer = csv.writer(query_file)
         writer.writerow(["Id", "Predicted"])
         writer.writerows(csv_data)
 
-    print("Query results writen to {}".format(_query_result_path(numpy_data_directory, num_features, split_ratio)))
+    print("Query results writen to {}".format(_query_result_path(dump_directory, num_features, split_ratio)))
 
-def _model_file_path(numpy_data_directory, num_features, split_ratio):
+def _model_file_path(dump_directory, num_features, split_ratio):
     """Determines the path for the file of the trained model
 
     Parameters
     ----------
-    numpy_data_directory : str
-        The directory where the numpy data is stored or should be stored
+    dump_directory : str
+        The directory where the trained model should be stored
     num_features : int
         The number of features per image
     split_ratio : float
@@ -128,20 +126,16 @@ def _model_file_path(numpy_data_directory, num_features, split_ratio):
 
     """
 
-    model_path = os.path.join(numpy_data_directory, "fitted_models")
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
-
     file_name = "random_forest_{}_{}.sav".format(num_features, split_ratio)
-    return os.path.join(model_path, file_name)
+    return os.path.join(dump_directory, file_name)
 
-def _query_result_path(numpy_data_directory, num_features, split_ratio):
+def _query_result_path(dump_directory, num_features, split_ratio):
     """Determines the path for the file of the query results
 
     Parameters
     ----------
-    numpy_data_directory : str
-        The directory where the numpy data is stored or should be stored
+    dump_directory : str
+        The directory where query results should be stored
     num_features : int
         The number of features per image
     split_ratio : float
@@ -154,16 +148,16 @@ def _query_result_path(numpy_data_directory, num_features, split_ratio):
 
     """
 
-    query_results_path = os.path.join(numpy_data_directory, "query_results")
-    if not os.path.exists(query_results_path):
-        os.makedirs(query_results_path)
-
     file_name = "random_forest_query_results_{}_{}.csv".format(num_features, split_ratio)
-    return os.path.join(query_results_path, file_name)
+    return os.path.join(dump_directory, file_name)
 
 if __name__ == "__main__":
     arguments = parser.parse_args()
 
+    dump_directory = os.path.join(arguments.numpy_directory, datetime.now().strftime("%Y%m%d-%H%M%S"))
+    os.makedirs(dump_directory)
+    copyfile("config.yaml", os.path.join(dump_directory, "config.yaml"))
+
     _find_num_features(arguments)
-    train_model(arguments)
-    create_query_file(arguments)
+    train_model(arguments, dump_directory)
+    create_query_file(arguments, dump_directory)
