@@ -24,7 +24,15 @@ import math
 import yaml
 
 import pywt
-import compute_hist
+# run this in this directory:
+#
+# pip install Cython
+# python setup.py build_ext -i
+try:
+    import compute_hist
+    grad = True
+except ModuleNotFoundError:
+    use_grad = False
 
 def get_train_data(numpy_data_directory, data_directory, num_features, split_ratio):
     """Gets the preprocessed train data
@@ -80,7 +88,7 @@ def get_test_data(numpy_data_directory, data_directory, num_features, split_rati
 
     return test_features, test_labels
 
-def get_train_and_test_data(numpy_data_directory, data_directory, num_features, split_ratio):
+def get_train_and_test_data(numpy_data_directory, data_directory, num_features, split_ratio, num_imgs_to_load=1500):
     """Gets the preprocessed train and test data
 
     If the data is not already preprocessed (i.e. stored in the numpy_data_directory),
@@ -118,7 +126,8 @@ def get_train_and_test_data(numpy_data_directory, data_directory, num_features, 
     except:
         # if it doesn't work, recalculate the data and store it to disk
         print("\tcreate scored image features...")
-        train_features, train_labels, test_features, test_labels = _preprocess_scored_data(data_directory, num_features, split_ratio)
+        train_features, train_labels, test_features, test_labels = \
+            _preprocess_scored_data(data_directory, num_features, split_ratio, num_imgs_to_load)
         _save_np_data(numpy_data_directory, train_features, _np_train_file_name(num_features, split_ratio))
         _save_np_data(numpy_data_directory, train_labels, _np_train_file_name(num_features, split_ratio, True))
         _save_np_data(numpy_data_directory, test_features, _np_test_file_name(num_features, split_ratio))
@@ -163,7 +172,7 @@ def get_query_data(numpy_data_directory, data_directory, num_features, split_rat
 
     return query_features, query_ids
 
-def _preprocess_scored_data(data_directory, num_features, split_ratio):
+def _preprocess_scored_data(data_directory, num_features, split_ratio, num_imgs_to_load=1500):
     """Preprocesses the scored image data
 
     The data is read from the data_directory, preprocessed and put into feature matrices and label
@@ -202,7 +211,7 @@ def _preprocess_scored_data(data_directory, num_features, split_ratio):
         csv_reader = csv.reader(csv_data)
         next(csv_reader)    # skip first row (labels)
         for row in csv_reader:
-            if cnt < 1500:
+            if cnt < num_imgs_to_load:
                 ids_with_scores.append(row)
                 cnt = cnt + 1
 
@@ -549,21 +558,27 @@ def _roi_histograms(image, conf):
                 hists.append(_compute_histogram_from_mask(mask, np_image, roi_conf['radial']['num_bins'][num_rad],
                                                          range_normal))
 
-        if roi_conf['grad']['include']:
-            # Todo: I think this only uses data without fft, add fft
-            img = np.float32(image)
-            img = img / np.amax(img)
+    if roi_conf['grad']['include'] and use_grad:
+        # Todo: I think this only uses data without fft, add fft
+        img = np.float32(image)
+        img = img / np.amax(img)
 
-            gx = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=1)
-            gy = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=1)
+        gx = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=1)
+        gy = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=1)
 
-            mag, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
+        mag, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
 
-            grad_hist = np.zeros(36).astype(np.float32)
+        grad_hist = np.zeros(36).astype(np.float32)
 
-            compute_hist.compute_hist_func(mag.flatten(), angle.flatten(), grad_hist, 1000*1000, 36)
-            hists.append(grad_hist)
-            # 1000*1000 number of pixels
-            # 36 number of bins (bins are angles) for magnitudes
+        compute_hist.compute_hist_func(mag.flatten(), angle.flatten(), grad_hist, 1000*1000, 36)
+        hists.append(grad_hist)
+        # 1000*1000 number of pixels
+        # 36 number of bins (bins are angles) for magnitudes
 
+    if roi_conf['angle']['include']:
+        mask = _create_angle_mask(1000, 1000, roi_conf['angle']['angle_l'], roi_conf['angle']['angle_h'])
+        hist = _compute_histogram_from_mask(mask, psd_log, roi_conf['angle']['num_bins'], range_fft) \
+            if roi_conf['angle']['prepr_fft'] else \
+            _compute_histogram_from_mask(mask, np_image, roi_conf['angle']['num_bins'], range_normal)
+        hists.append(hist)
     return hists

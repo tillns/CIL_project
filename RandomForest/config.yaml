@@ -1,4 +1,6 @@
 histogram_type : ROI
+split_ratio: 0.9
+num_imgs_to_load: 1500
 
 # specify histograms to include
 ROI_options:
@@ -23,9 +25,16 @@ ROI_options:
          #- 150
          #- - 150
          #  - 300
-         - -500
+         - -453
 
   grad:
     include: False
     prepr_fft: True
     num_bins: 36
+
+  angle:
+    include: False
+    prepr_fft: True
+    num_bins: 30
+    angle_l: 10
+    angle_h: 10

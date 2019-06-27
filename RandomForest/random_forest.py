@@ -20,14 +20,11 @@ from shutil import copyfile
 parser = ArgumentParser()
 parser.add_argument("--data-directory", required=True, help="Required. The directory where the dataset is stored.")
 parser.add_argument("--numpy-directory", required=True, help="Required. The directory where the numpy data is stored or should be stored. This directory doesn't have to exists yet.")
-parser.add_argument("--num-features", default=0, type=int, help="Optional. The number of features per image taken into consideration. If no number is given, the correct number is concluded from the configuration file")
-parser.add_argument("--split-ratio", default=0.9, type=float, help="Optional. The train-test split ratio of the data to be stored. The value has to be between 0 and 1. Default is 0.9")
+#parser.add_argument("--num-features", default=0, type=int, help="Optional. The number of features per image taken into consideration. If no number is given, the correct number is concluded from the configuration file")
+#parser.add_argument("--split-ratio", default=0.9, type=float, help="Optional. The train-test split ratio of the data to be stored. The value has to be between 0 and 1. Default is 0.9")
 parser.add_argument("--random-seed", default=1234, type=int, help="Optional. A integer to seed the random number generator. Default is 1234")
 
 def _find_num_features(arguments):
-    with open("config.yaml", 'r') as stream:
-        conf = yaml.full_load(stream)
-
     arguments.num_features = 0
     for roi_type, type_conf in conf['ROI_options'].items():
         if type_conf['include']:
@@ -55,8 +52,9 @@ def train_model(arguments, dump_directory):
     num_features = arguments.num_features
     split_ratio = arguments.split_ratio
 
-    train_features, train_labels, test_features, test_labels = get_train_and_test_data(numpy_data_directory, data_directory,
-                                                                                       num_features, split_ratio)
+    train_features, train_labels, test_features, test_labels = \
+        get_train_and_test_data(numpy_data_directory, data_directory, num_features, split_ratio,
+                                arguments.num_imgs_to_load)
 
 
     base_model = sklearn.ensemble.RandomForestRegressor(criterion="mae", oob_score=True, random_state = arguments.random_seed)
@@ -157,7 +155,10 @@ if __name__ == "__main__":
     dump_directory = os.path.join(arguments.numpy_directory, datetime.now().strftime("%Y%m%d-%H%M%S"))
     os.makedirs(dump_directory)
     copyfile("config.yaml", os.path.join(dump_directory, "config.yaml"))
-
+    with open("config.yaml", 'r') as stream:
+        conf = yaml.full_load(stream)
     _find_num_features(arguments)
+    arguments.split_ratio = conf['split_ratio']
+    arguments.num_imgs_to_load = conf['num_imgs_to_load']
     train_model(arguments, dump_directory)
     create_query_file(arguments, dump_directory)
