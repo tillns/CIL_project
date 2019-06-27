@@ -2,7 +2,7 @@
 Project for the ETH Computational Intelligence Lab
 
 ## Image generation task
-# code
+### code
 - ```/AE_plus_KMeans```
 - ```/Adhoc_generator```
 - ```/Conditional-PixelCNN-decoder-master```
