@@ -1,8 +1,6 @@
 """Utils for the CNN Classifier
 
 This module contains the following public functions:
-    #get_pad
-    #getNormLayer
     #get_random_indices
     #isInt
     #get_numpy
