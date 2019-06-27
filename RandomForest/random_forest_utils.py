@@ -88,7 +88,7 @@ def get_test_data(numpy_data_directory, data_directory, num_features, split_rati
 
     return test_features, test_labels
 
-def get_train_and_test_data(numpy_data_directory, data_directory, num_features, split_ratio):
+def get_train_and_test_data(numpy_data_directory, data_directory, num_features, split_ratio, num_imgs_to_load=1500):
     """Gets the preprocessed train and test data
 
     If the data is not already preprocessed (i.e. stored in the numpy_data_directory),
@@ -126,7 +126,8 @@ def get_train_and_test_data(numpy_data_directory, data_directory, num_features, 
     except:
         # if it doesn't work, recalculate the data and store it to disk
         print("\tcreate scored image features...")
-        train_features, train_labels, test_features, test_labels = _preprocess_scored_data(data_directory, num_features, split_ratio)
+        train_features, train_labels, test_features, test_labels = \
+            _preprocess_scored_data(data_directory, num_features, split_ratio, num_imgs_to_load)
         _save_np_data(numpy_data_directory, train_features, _np_train_file_name(num_features, split_ratio))
         _save_np_data(numpy_data_directory, train_labels, _np_train_file_name(num_features, split_ratio, True))
         _save_np_data(numpy_data_directory, test_features, _np_test_file_name(num_features, split_ratio))
@@ -171,7 +172,7 @@ def get_query_data(numpy_data_directory, data_directory, num_features, split_rat
 
     return query_features, query_ids
 
-def _preprocess_scored_data(data_directory, num_features, split_ratio):
+def _preprocess_scored_data(data_directory, num_features, split_ratio, num_imgs_to_load=1500):
     """Preprocesses the scored image data
 
     The data is read from the data_directory, preprocessed and put into feature matrices and label
@@ -210,7 +211,7 @@ def _preprocess_scored_data(data_directory, num_features, split_ratio):
         csv_reader = csv.reader(csv_data)
         next(csv_reader)    # skip first row (labels)
         for row in csv_reader:
-            if cnt < 1500:
+            if cnt < num_imgs_to_load:
                 ids_with_scores.append(row)
                 cnt = cnt + 1
 
