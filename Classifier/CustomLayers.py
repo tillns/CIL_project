@@ -1,3 +1,14 @@
+"""Custom Layers for the CNN Classifier
+
+These classes define custom layers for the CNN Classifier.
+
+This module contains the following classes:
+    #ResBlock
+    #Padder
+    #Pixel_norm
+    #FactorLayer
+"""
+
 import tensorflow as tf
 from utils import getNormLayer, get_pad
 
