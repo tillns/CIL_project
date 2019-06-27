@@ -1,3 +1,10 @@
+"""Classifier
+
+This file trains a CNN classifier and evaluates it against a test set. It also predicts
+the scores for a query data set and saves them to a file.
+
+"""
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 # TensorFlow and tf.keras
 import tensorflow as tf
@@ -26,6 +33,7 @@ from utils import getNormLayer, get_epoch_and_path, get_specific_cp, test_model,
 
 
 class CrossEntropy(tf.keras.losses.Loss):
+    # Cross Entropy loss
     def call(self, y_true, y_pred):
         from tensorflow.python.ops import math_ops
         from tensorflow.python.framework import ops
@@ -35,6 +43,7 @@ class CrossEntropy(tf.keras.losses.Loss):
 
 
 class CustomLoss(tf.keras.losses.Loss):
+    # Defines the loss based on the config file
     def __init__(self):
         super(CustomLoss, self).__init__()
         train_loss_type = conf['train_loss_type']
@@ -58,6 +67,13 @@ class CustomLoss(tf.keras.losses.Loss):
 
 
 def get_model():
+    """Defines and returns the CNN model based on the config file.
+    
+    Returns
+    -------
+    model : sequential tf model
+        CNN model
+    """
     features = conf['features']
     last_features = image_channels
     res = image_size
@@ -96,6 +112,7 @@ def get_model():
 
 
 if __name__ == '__main__':
+    # parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
     parser.add_argument('-T', '--test_on_query', type=bool, default=False)
@@ -105,9 +122,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # load in the configurations from the config file
     with open("config.yaml", 'r') as stream:
         conf = yaml.full_load(stream)
 
+    # get the settings from both the command line arguments and the config file
     test_on_query = args.test_on_query
     restore_checkpoint = True if test_on_query else args.restore_ckpt
     image_size = conf['image_size']
@@ -129,6 +148,9 @@ if __name__ == '__main__':
     # checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
     checkpoint_dir = os.path.join(classifier_dir, "checkpoints/res{}".format(image_size))
 
+    """
+    Restoring the checkpoint
+    """
     if restore_checkpoint:
         if args.ckpt_path is not None:
             epoch_start, specific_path = get_epoch_and_path(args.ckpt_path)
@@ -157,6 +179,9 @@ if __name__ == '__main__':
     else:
         model = get_model()
 
+    """
+    Testing model on the query data set.
+    """
     if test_on_query:
         with open(os.path.join(cp_dir_time, "config.yaml"), 'r') as stream:
             conf = yaml.full_load(stream)
@@ -184,6 +209,9 @@ if __name__ == '__main__':
                                                     train_images.shape[0]), end="")
 
     else:
+        """
+        Train model on the scored data set.
+        """
         cp_dir_time = os.path.join(checkpoint_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
         if not os.path.exists(cp_dir_time):
             os.makedirs(cp_dir_time)
