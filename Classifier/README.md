@@ -27,6 +27,7 @@ Where in both cases ```/path/to/checkpoint/cp####.ckpt.data-00000-of-00001``` is
 
 ## Requirements
 
+- tensorflow
 - cv2
 - matplotlib
 - numpy
