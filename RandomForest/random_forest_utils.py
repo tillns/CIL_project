@@ -24,7 +24,15 @@ import math
 import yaml
 
 import pywt
-import compute_hist
+# run this in this directory:
+#
+# pip install Cython
+# python setup.py build_ext -i
+try:
+    import compute_hist
+    grad = True
+except ModuleNotFoundError:
+    use_grad = False
 
 def get_train_data(numpy_data_directory, data_directory, num_features, split_ratio):
     """Gets the preprocessed train data
@@ -549,21 +557,21 @@ def _roi_histograms(image, conf):
                 hists.append(_compute_histogram_from_mask(mask, np_image, roi_conf['radial']['num_bins'][num_rad],
                                                          range_normal))
 
-        if roi_conf['grad']['include']:
-            # Todo: I think this only uses data without fft, add fft
-            img = np.float32(image)
-            img = img / np.amax(img)
+    if roi_conf['grad']['include'] and use_grad:
+        # Todo: I think this only uses data without fft, add fft
+        img = np.float32(image)
+        img = img / np.amax(img)
 
-            gx = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=1)
-            gy = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=1)
+        gx = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=1)
+        gy = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=1)
 
-            mag, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
+        mag, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
 
-            grad_hist = np.zeros(36).astype(np.float32)
+        grad_hist = np.zeros(36).astype(np.float32)
 
-            compute_hist.compute_hist_func(mag.flatten(), angle.flatten(), grad_hist, 1000*1000, 36)
-            hists.append(grad_hist)
-            # 1000*1000 number of pixels
-            # 36 number of bins (bins are angles) for magnitudes
+        compute_hist.compute_hist_func(mag.flatten(), angle.flatten(), grad_hist, 1000*1000, 36)
+        hists.append(grad_hist)
+        # 1000*1000 number of pixels
+        # 36 number of bins (bins are angles) for magnitudes
 
     return hists
