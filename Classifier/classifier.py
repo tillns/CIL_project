@@ -81,10 +81,10 @@ def get_model():
 
     model = tf.keras.Sequential(name='till_model')
     while res > conf['min_res']:
-        if res % conf['downsample_factor'] != 0:
-            closestexpres = min(resexp, key=lambda x: abs(x - res))
+        if res == 250:
+            closestexpres = 256
             model.add(Padder(padding=closestexpres - res,
-                             input_shape=(res, res, last_features)))  # 125 -> 128 or maybe 25 -> 32...
+                             input_shape=(res, res, last_features)))  # 250 -> 256
             res = closestexpres
         for i in range(conf['num_blocks_per_res']):
             downsample = (i == 0 and conf['downsample_with_first_conv']) or \
@@ -108,7 +108,6 @@ def get_model():
     # model.add(SigmoidLayer())
     # model.add(FactorLayer(8))  # to make output range from 0 to 8
     return model
-
 
 
 if __name__ == '__main__':

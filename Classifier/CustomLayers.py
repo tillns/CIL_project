@@ -13,17 +13,20 @@ import tensorflow as tf
 from random import randint
 
 
-def get_pad(x, total_padding=0):
+def get_pad(x, total_padding=0, training=True):
     if total_padding == 0:
         return x
     elif total_padding > 0:
         rand1 = randint(0, total_padding)
         rand2 = randint(0, total_padding)
-        return tf.pad(x, tf.constant([[0, 0], [rand1, total_padding - rand1], [rand2, total_padding - rand2], [0, 0]]))
+        return tf.cond(training, lambda: tf.pad(x, tf.constant([[0, 0], [rand1, total_padding - rand1],
+                                                                [rand2, total_padding - rand2], [0, 0]])),
+                       lambda : tf.pad(x, tf.constant([[0, 0], [total_padding//2, total_padding - total_padding//2],
+                                                        [total_padding//2, total_padding - total_padding//2], [0, 0]])))
     else:
         total_padding = abs(total_padding)
-        rand1 = randint(0, total_padding)
-        rand2 = randint(0, total_padding)
+        rand1 = randint(0, total_padding) if training else total_padding//2
+        rand2 = randint(0, total_padding) if training else total_padding//2
         s = x.shape
         return x[:, rand1:s[1] - total_padding + rand1, rand2:s[2] - total_padding + rand2]
 
@@ -94,8 +97,8 @@ class Padder(tf.keras.layers.Layer):
         super(Padder, self).__init__(**kwargs)
         self.padding = padding
 
-    def call(self, x):
-        return get_pad(x, self.padding)
+    def call(self, x, training=False):
+        return get_pad(x, self.padding, training=training)
 
     def get_config(self):
         #return {'padding': self.padding}
