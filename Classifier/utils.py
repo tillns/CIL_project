@@ -1,3 +1,23 @@
+"""Utils for the CNN Classifier
+
+This module contains the following public functions:
+    #get_pad
+    #getNormLayer
+    #get_random_indices
+    #isInt
+    #get_numpy
+    #get_max_val_fft
+    #transform
+    #load_dataset
+    #get_latest_cp
+    #get_epoch_and_path
+    #get_specific_cp
+    
+And the following classes:
+    #FFT_augm
+    #Augm_Sequence
+"""
+
 from random import randint
 import tensorflow as tf
 from CustomLayers import Pixel_norm, FactorLayer
