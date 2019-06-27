@@ -301,7 +301,7 @@ def _load_and_preprocess_images(image_directory, image_ids, num_features, filety
         image = PIL.Image.open(os.path.join(image_directory, "{}.{}".format(id, filetype)))
 
         if conf['histogram_type'] == 'ROI':
-            histograms = _roi_histograms(image, conf)
+            histograms = roi_histograms(image, conf)
         else:
             raise ValueError("config.yaml: histogram_type has no valid value")
 
@@ -506,7 +506,7 @@ def _create_angle_mask(h, w, angle_l, angle_h):
     return mask_angle
 
 
-def _roi_histograms(image, conf):
+def roi_histograms(image, conf):
     roi_conf = conf['ROI_options']
     np_image = np.array(image, dtype=np.uint8)
     range_normal = (0, 255)
