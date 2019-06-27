@@ -57,6 +57,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--path', type=str, default=None,
                         help='Whole path to dir with images or path to individual image.')
+    parser.add_argument('-d', '--nn_path', type=str, default="/home/tillns/CIL_project/Classifier/checkpoints/res1000/"
+                        "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001",
+                        help='Whole path to nn checkpoint file ending with .data-00001....')
+    parser.add_argument('-d', '--rf_path', type=str, default="/home/tillns/CIL_project/RandomForest/np_out/whole_radial"
+                        "_all_0.99_29binsbutbest/random_forest_119_0.99.sav", help='Whole path rf model (.sav)')
     args = parser.parse_args()
 
     if args.path is None:

@@ -18,7 +18,6 @@ And the following classes:
     #Augm_Sequence
 """
 
-from random import randint
 import tensorflow as tf
 from CustomLayers import Pixel_norm, FactorLayer
 from random import shuffle
@@ -30,28 +29,6 @@ from tensorflow.python.keras.utils.data_utils import Sequence
 from albumentations import DualTransform
 import sys
 
-
-def get_pad(x, total_padding=0):
-    if total_padding == 0:
-        return x
-    elif total_padding > 0:
-        rand1 = randint(0, total_padding)
-        rand2 = randint(0, total_padding)
-        return tf.pad(x, tf.constant([[0, 0], [rand1, total_padding - rand1], [rand2, total_padding - rand2], [0, 0]]))
-    else:
-        total_padding = abs(total_padding)
-        rand1 = randint(0, total_padding)
-        rand2 = randint(0, total_padding)
-        s = x.shape
-        return x[:, rand1:s[1] - total_padding + rand1, rand2:s[2] - total_padding + rand2]
-
-
-def getNormLayer(norm_type='batch', momentum=0.9, epsilon=1e-5):
-    if norm_type == 'pixel':
-        return Pixel_norm(epsilon)
-    if norm_type == 'batch':
-        return tf.keras.layers.BatchNormalization(momentum=momentum, epsilon=epsilon)
-    return FactorLayer(1)
 
 def get_random_indices(begin=0, end=9600, num_indices=25):
     list1 = list(range(begin, end))
@@ -122,23 +99,24 @@ def load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query, label_path
 
     except FileNotFoundError:
         sys.exit("Dataset not found.")
-    np_data_path = os.path.join(classifier_dir, "numpy_data/{}_p{:.1f}_s{}.dat".format('{}', percentage_train,
-                                                                                       image_size))
+    fft_string = "_fft" if conf['use_fft'] and conf['transform_before'] else ""
+    np_data_path = os.path.join(classifier_dir, "numpy_data/{}_p{:.1f}_s{}{}.dat".format('{}', percentage_train,
+                                                                                         image_size, fft_string))
     trainset_path = np_data_path.format("queryset") if test_on_query else np_data_path.format("trainset")
     testset_path = np_data_path.format('testset')
     both_paths_exist = save_np_to_mem and os.path.exists(trainset_path) and (percentage_train == 1 or os.path.exists(testset_path))
     mode = 'r+' if both_paths_exist else 'w+'
-    train_images = get_numpy(mode, int(dataset_len*percentage_train), trainset_path)
+    train_images = get_numpy(mode, int(dataset_len*percentage_train), trainset_path, save_np_to_mem, image_size)
     train_labels = np.zeros(shape=(train_images.shape[0],), dtype=np.float32)
     if percentage_train < 1:
-        test_images = get_numpy(mode, dataset_len - int(dataset_len * percentage_train), testset_path)
+        test_images = get_numpy(mode, dataset_len - int(dataset_len * percentage_train), testset_path, save_np_to_mem, image_size)
         test_labels = np.zeros(shape=(test_images.shape[0],), dtype=np.float32)
     for num in range(dataset_len):
         if not both_paths_exist:
             img = Image.open(os.path.join(image_directory, img_list[num])).resize((image_size, image_size))
             img_np = np.array(img, dtype=np.float32).reshape((image_size, image_size, 1))
             if conf['transform_before']:
-                transform(img_np)
+                transform(img_np, conf['use_fft'])
         if num < int(dataset_len * percentage_train):
             train_labels[num] = label_list[num][1]
             if not both_paths_exist:
@@ -182,6 +160,7 @@ class Augm_Sequence(Sequence):
     def on_epoch_end(self):
         if self.shuffle:
             np.random.shuffle(self.indices)
+
 
 
 def get_latest_cp(checkpoint_dir, epoch=None):

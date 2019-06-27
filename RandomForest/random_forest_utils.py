@@ -510,9 +510,12 @@ def _roi_histograms(image, conf):
     roi_conf = conf['ROI_options']
     np_image = np.array(image, dtype=np.uint8)
     range_normal = (0, 255)
-    psd = np.abs(np.fft.fftshift(np.fft.fft2(np.asarray(image, dtype=np.float32)))) ** 2
-    psd_log = 10 * np.log(psd + np.power(1.0, -120))
-    range_fft=(-60, 300)
+    psd_fft = np.fft.fft2(np.asarray(image, dtype=np.float32))
+    psd_fft_shift = np.abs(np.fft.fftshift(psd_fft))**2
+    psd_log = 10 * np.log(psd_fft_shift + np.power(1.0, -120))
+    psd_noshifted = np.abs(psd_fft)**2
+    psd_noshifted_log = 10 * np.log(psd_noshifted + np.power(1.0, -120))
+    range_fft = (-60, 300)
 
     hists = []
 
@@ -527,10 +530,10 @@ def _roi_histograms(image, conf):
     # example for subset of frequencies (the frequency spectrum is very symmetric)
     # adding these additional histograms gave an improvement of about 5 %
     if roi_conf['quarter_img']['include']:
-        num_rows, num_cols = psd.shape
+        num_rows, num_cols = psd_fft_shift.shape
 
         if roi_conf['quarter_img']['prepr_fft']:
-            quarter_psd = psd[num_rows // 2 : num_rows, num_cols // 2 : num_cols]
+            quarter_psd = psd_fft_shift[num_rows // 2 : num_rows, num_cols // 2 : num_cols]
             quarter = 10 * np.log(quarter_psd + np.power(1.0, -120))
             quarter_range = range_fft
 
@@ -552,11 +555,15 @@ def _roi_histograms(image, conf):
         for num_rad, radius in enumerate(roi_conf['radial']['radii']):
             mask = _create_circular_mask(1000, 1000, [500, 500], radius)
             if roi_conf['radial']['prepr_fft']:
-                hists.append(_compute_histogram_from_mask(mask, psd_log, roi_conf['radial']['num_bins'][num_rad],
-                                                         range_fft))
+                if roi_conf['radial']['shift_fft']:
+                    hists.append(_compute_histogram_from_mask(mask, psd_log, roi_conf['radial']['num_bins'][num_rad],
+                                                              range_fft))
+                else:
+                    hists.append(_compute_histogram_from_mask(mask, psd_noshifted_log,
+                                                              roi_conf['radial']['num_bins'][num_rad], range_fft))
             else:
                 hists.append(_compute_histogram_from_mask(mask, np_image, roi_conf['radial']['num_bins'][num_rad],
-                                                         range_normal))
+                                                          range_normal))
 
     if roi_conf['grad']['include'] and use_grad:
         # Todo: I think this only uses data without fft, add fft

@@ -10,7 +10,30 @@ This module contains the following classes:
 """
 
 import tensorflow as tf
-from utils import getNormLayer, get_pad
+from random import randint
+
+
+def get_pad(x, total_padding=0):
+    if total_padding == 0:
+        return x
+    elif total_padding > 0:
+        rand1 = randint(0, total_padding)
+        rand2 = randint(0, total_padding)
+        return tf.pad(x, tf.constant([[0, 0], [rand1, total_padding - rand1], [rand2, total_padding - rand2], [0, 0]]))
+    else:
+        total_padding = abs(total_padding)
+        rand1 = randint(0, total_padding)
+        rand2 = randint(0, total_padding)
+        s = x.shape
+        return x[:, rand1:s[1] - total_padding + rand1, rand2:s[2] - total_padding + rand2]
+
+
+def getNormLayer(norm_type='batch', momentum=0.9, epsilon=1e-5):
+    if norm_type == 'pixel':
+        return Pixel_norm(epsilon)
+    if norm_type == 'batch':
+        return tf.keras.layers.BatchNormalization(momentum=momentum, epsilon=epsilon)
+    return FactorLayer(1)
 
 
 class ResBlock(tf.keras.layers.Layer):
