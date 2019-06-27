@@ -576,9 +576,11 @@ def _roi_histograms(image, conf):
         # 36 number of bins (bins are angles) for magnitudes
 
     if roi_conf['angle']['include']:
-        mask = _create_angle_mask(1000, 1000, roi_conf['angle']['angle_l'], roi_conf['angle']['angle_h'])
-        hist = _compute_histogram_from_mask(mask, psd_log, roi_conf['angle']['num_bins'], range_fft) \
-            if roi_conf['angle']['prepr_fft'] else \
-            _compute_histogram_from_mask(mask, np_image, roi_conf['angle']['num_bins'], range_normal)
-        hists.append(hist)
+        for num_it, num_bins in enumerate(roi_conf['angle']['num_bins']):
+            mask = _create_angle_mask(1000, 1000, roi_conf['angle']['angle_l'][num_it],
+                                      roi_conf['angle']['angle_h'][num_it])
+            hist = _compute_histogram_from_mask(mask, psd_log, num_bins, range_fft) \
+                if roi_conf['angle']['prepr_fft'] else \
+                _compute_histogram_from_mask(mask, np_image, num_bins, range_normal)
+            hists.append(hist)
     return hists
