@@ -271,7 +271,7 @@ if __name__ == '__main__':
             os.system(cp_command.format("config.yaml"))
 
         compose_list = [HorizontalFlip(p=0.5), VerticalFlip(p=0.5), ShiftScaleRotate(shift_limit=0.2, scale_limit=0,
-                        rotate_limit=0, border_mode=cv2.BORDER_REFLECT_101, p=0.8)]
+                        rotate_limit=0, border_mode=cv2.BORDER_CONSTANT, p=1)]
         if not conf['transform_before']:
             compose_list.append(FFT_augm(conf['use_fft']))
         AUGMENTATIONS_TRAIN = Compose(compose_list)
