@@ -1,5 +1,5 @@
 # CNN Similarity Scorer
-Project for the ETH Computational Intelligence Lab
+A similarity scorer using a Convolutional Neural Network.
 
 ## Dataset path
 Make sure that the folder containing the images (from kaggle) is located in the path
