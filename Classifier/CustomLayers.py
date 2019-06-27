@@ -3,6 +3,8 @@
 These classes define custom layers for the CNN Classifier.
 
 This module contains the following classes:
+    #get_pad
+    #getNormLayer
     #ResBlock
     #Padder
     #Pixel_norm
