@@ -1,10 +1,15 @@
 # CNN Similarity Scorer
 A similarity scorer using a Convolutional Neural Network.
 
-## Dataset path
-Make sure that the folder containing the images (from kaggle) is located in the path
+## Paths
+- Make sure that the folder containing the images (from kaggle) is located in the path
 
 ```'~/dataset/cil-cosmology-2018/cosmology_aux_data_170429/'```
+
+- Also, make sure that the root directory of this project is located in your home directory. Else ```classifier.py``` will not run properly.
+
+- Create a folder named ```numpy_data``` in this folder.
+
 
 ## Execution
 ### Training
