@@ -8,5 +8,11 @@
 
 
 ## Requirements
-
-
+- sklearn
+- joblib
+- pyyaml
+- numpy
+- PIL
+- cv2
+- pywt
+- cython
