@@ -1,7 +1,7 @@
 # CIL_project
 Project for the ETH Computational Intelligence Lab.
 
-Authors: Sven Kellenberger, Hannes Pfamatter, Till Schnabel, Michelle Woon
+Authors: Sven Kellenberger, Hannes Pfammatter, Till Schnabel, Michelle Woon
 
 Group: Galaxy Crusaders
 
