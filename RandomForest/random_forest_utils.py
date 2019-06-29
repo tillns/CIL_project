@@ -510,12 +510,13 @@ def roi_histograms(image, conf):
     roi_conf = conf['ROI_options']
     np_image = np.array(image, dtype=np.uint8)
     range_normal = (0, 255)
+    eps = np.power(10.0, -15.0)
     psd_fft = np.fft.fft2(np.asarray(image, dtype=np.float32))
     psd_fft_shift = np.abs(np.fft.fftshift(psd_fft))**2
-    psd_log = 10 * np.log(psd_fft_shift + np.power(1.0, -120))
+    psd_log = 10 * np.log10(psd_fft_shift + eps)
     psd_noshifted = np.abs(psd_fft)**2
-    psd_noshifted_log = 10 * np.log(psd_noshifted + np.power(1.0, -120))
-    range_fft = (-60, 300)
+    psd_noshifted_log = 10 * np.log10(psd_noshifted + eps)
+    range_fft = (-120, 180)
 
     hists = []
 
