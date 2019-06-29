@@ -43,12 +43,12 @@ void compute_hist(float * mag_arr, float * angle_arr, float * hist, int num_pixe
 				w_l = frac_index - floor(frac_index);
 				w_h = ceil(frac_index) - frac_index;
 				
-				hist[idx_l] += mag * w_l;
-				hist[idx_h] += mag * w_h;
+				hist[idx_l] += 1.0 * w_l; // mag * w_l;
+				hist[idx_h] += 1.0 * w_h; // mag * w_h;
 				
 			} else {
 				
-				hist[idx_l] += mag;
+				hist[idx_l] += 1.0; // mag;
 				
 			}
 			
@@ -56,15 +56,15 @@ void compute_hist(float * mag_arr, float * angle_arr, float * hist, int num_pixe
 			
 			if(frac_index == num_bins_f) {
 				
-				hist[0] += mag;
+				hist[0] += 1.0; // mag;
 				
 			} else {
 				
 				w_l = frac_index - (num_bins_f - 1.0);
 				w_h = num_bins_f - frac_index;
 				
-				hist[num_bins - 1] += mag * w_l;
-				hist[0] += mag * w_h;
+				hist[num_bins - 1] += 1.0 * w_l; // mag * w_l;
+				hist[0] += 1.0 * w_h; // mag * w_h;
 				
 			}		
 		}
