@@ -14,6 +14,7 @@ import os
 import csv
 import random
 import numpy as np
+import numpy.ma as ma
 import PIL.Image
 
 import sys
@@ -569,20 +570,24 @@ def roi_histograms(image, conf):
 
     if roi_conf['grad']['include'] and use_grad:
         # Todo: I think this only uses data without fft, add fft
-        img = np.float32(image)
-        img = img / np.amax(img)
 
-        gx = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=1)
-        gy = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=1)
+        gx = cv2.Sobel(psd_log, cv2.CV_32F, 1, 0, ksize=1)
+        gy = cv2.Sobel(psd_log, cv2.CV_32F, 0, 1, ksize=1)
+        
+        msk = _create_circular_mask(1000, 1000, [500, 500], radius=120)
 
         mag, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
+        
+        mag_mskd = ma.masked_array(mag, mask=msk)
+        angle_mskd = ma.masked_array(angle, mask=msk)
 
-        grad_hist = np.zeros(36).astype(np.float32)
+        grad_hist = np.zeros(9).astype(np.float32)
+        
+        compute_hist.compute_hist_func(mag_mskd[0:500,500:1000].compressed().flatten(), 
+                                       angle_mskd[0:500,500:1000].compressed().flatten(), 
+                                       grad_hist, angle_mskd[0:500,500:1000].compressed().size, 9) 
 
-        compute_hist.compute_hist_func(mag.flatten(), angle.flatten(), grad_hist, 1000*1000, 36)
         hists.append(grad_hist)
-        # 1000*1000 number of pixels
-        # 36 number of bins (bins are angles) for magnitudes
 
     if roi_conf['angle']['include']:
         for num_it, num_bins in enumerate(roi_conf['angle']['num_bins']):
