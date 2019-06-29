@@ -265,7 +265,7 @@ progbar.on_train_begin()
 
 if do_validation:
     min_dis_val_loss = 10000
-    min_gen_val_loss = 10000
+    max_gen_val_score = 0
     nn_valmodel, nn_valconf = load_km_with_conf(os.path.join(classifier_cp_dir, conf['nn_val_model_path']))
     rf_model, rf_conf = load_rf_with_conf(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"),
                                                        conf['rf_val_model_path']))
@@ -303,10 +303,10 @@ for epoch in range(num_epochs):
     epoch_logs = {'gen': {'gen_loss': gen_losses / num_train_it},
                   'dis': {'dis_loss': dis_losses / num_train_it}}
     # only test dis on one randomly drawn batch of test data per epoch
-    if do_validation:
+    if do_validation and (epoch+1)%conf['period_for_val'] == 0:
         callbacks._call_begin_hook('test')
         dis_val_loss = 0
-        gen_val_loss = 0
+        gen_val_score = 0
         if image_size == 28:
             np_img_tensor = detransform_norm(create_complete_images(generator, conf['vmin'], conf['num_val_images'],
                                                                     conf['num_classes']))
@@ -315,41 +315,29 @@ for epoch in range(num_epochs):
                                                              nn_valmodel, nn_valconf['batch_size'])
             rf_score = np.expand_dims(rf_score, axis=1)
             score = np.concatenate((rf_score, nn_score))
-            label_eight = np.ones((conf['num_val_images']*2, 1))*8
-            gen_val_loss = tf.reduce_mean(tf.abs(score-label_eight))
+            gen_val_score = tf.reduce_mean(score)
 
         for iteration in range(num_test_it):
             x_ = test_images[iteration*batch_size:min(test_len, (iteration+1)*batch_size)]
             labels = test_labels[iteration*batch_size:min(test_len, (iteration+1)*batch_size)] if conditional else None
             real_output = discriminator([x_, labels], training=False) if conditional else \
                 discriminator(x_, training=False)
-            if image_size == 125:
-                noise = tf.random.normal([batch_size, gconf['input_neurons']])
-                generated_images = generator([noise, labels], training=False) if conditional else \
-                    generator(noise, training=False)
-                fake_output = discriminator([generated_images, labels], training=False) if conditional else \
-                    discriminator(generated_images, training=False)
-                val_output = val_model(generated_images, training=False)/8
-                gen_val_loss += generator_loss(val_output)/num_test_it
-                dis_val_loss += discriminator_loss(real_output, fake_output)
-            else:
-                dis_val_loss += discriminator_loss(real_output, None)
+            dis_val_loss += discriminator_loss(real_output, None)
 
         callbacks._call_end_hook('test')
         dis_val_loss /= num_test_it
         min_dis_val_loss = min(min_dis_val_loss, dis_val_loss)
-        save_new_cp = min_gen_val_loss > gen_val_loss
-        min_gen_val_loss = min(min_gen_val_loss, gen_val_loss)
+        save_new_cp = max_gen_val_score > gen_val_score
+        max_gen_val_score = min(max_gen_val_score, gen_val_score)
         epoch_logs['dis']['dis_val_loss'] = dis_val_loss
         epoch_logs['dis']['min_dis_val_loss'] = min_dis_val_loss
-        epoch_logs['gen']['gen_val_loss'] = gen_val_loss
-        epoch_logs['gen']['min_gen_val_loss'] = min_gen_val_loss
+        epoch_logs['gen']['gen_val_score'] = gen_val_score
+        epoch_logs['gen']['max_gen_val_score'] = max_gen_val_score
 
 
 
     # Save the model every few epochs
-    if (not do_validation and (epoch + 1) % conf['period_to_save_cp'] == 0) or \
-            (do_validation and save_new_cp or (epoch + 1) % 40 == 0):
+    if ((epoch + 1) % conf['period_to_save_cp'] == 0) or (do_validation and save_new_cp ):
 
         try:
             checkpoint_path = os.path.join(checkpoint_dir, "cp_{}_epoch{}".format("{}", epoch + 1))

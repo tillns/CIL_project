@@ -128,7 +128,7 @@ if __name__ == '__main__':
                         help='Whole path to classfier nn checkpoint file ending with .data-00001....')
     parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "CIL_project/RandomForest/np_out/whole_"
                         "radial_all_0.99_29binsbutbest/random_forest_119_0.99.sav"), help='Whole path rf model (.sav)')
-    parser.add_argument('-f', '--find_best_num_stars_per_image', type=bool, default=True)
+    parser.add_argument('-f', '--find_best_num_stars_per_image', type=bool, default=False)
     args = parser.parse_args()
 
     if args.checkpoint_path is None:

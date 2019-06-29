@@ -22,8 +22,8 @@ class CallbackList(object):
         if do_validation:
             dis_metrics.append('dis_val_loss')
             dis_metrics.append('min_dis_val_loss')
-            dis_metrics.append('gen_val_loss')
-            dis_metrics.append('min_gen_val_loss')
+            dis_metrics.append('gen_val_score')
+            dis_metrics.append('max_gen_val_score')
         self.params = {'dis': {
             'batch_size': batch_size,
             'epochs': num_epochs,
