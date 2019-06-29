@@ -524,6 +524,8 @@ def roi_histograms(image, conf):
         if not roi_conf['whole_img']['prepr_fft']:
             whole_hist, _ = np.histogram(np_image, bins=roi_conf['whole_img']['num_bins'], range=range_normal)
         else:
+            extra_whole_hist, _ = np.histogram(psd_log, bins=33, range=(10, 90))
+            hists.append(extra_whole_hist)
             whole_hist, _ = np.histogram(psd_log, bins=roi_conf['whole_img']['num_bins'], range=range_fft)
         hists.append(whole_hist)
 
@@ -557,6 +559,7 @@ def roi_histograms(image, conf):
             mask = _create_circular_mask(1000, 1000, [500, 500], radius)
             if roi_conf['radial']['prepr_fft']:
                 if roi_conf['radial']['shift_fft']:
+                    hists.append(_compute_histogram_from_mask(mask, psd_log, 33, (10, 90)))
                     hists.append(_compute_histogram_from_mask(mask, psd_log, roi_conf['radial']['num_bins'][num_rad],
                                                               range_fft))
                 else:

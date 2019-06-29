@@ -25,7 +25,7 @@ parser.add_argument("--numpy-directory", required=True, help="Required. The dire
 parser.add_argument("--random-seed", default=1234, type=int, help="Optional. A integer to seed the random number generator. Default is 1234")
 
 def _find_num_features(arguments):
-    arguments.num_features = 0
+    arguments.num_features = 66
     for roi_type, type_conf in conf['ROI_options'].items():
         if type_conf['include']:
             plus = type_conf['num_bins']
