@@ -187,7 +187,7 @@ if __name__ == '__main__':
         image_size = conf['image_size']
         batch_size = conf['batch_size']
         train_images, _, _, _, img_list = load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query,
-                                                       label_path, image_directory)
+                                                       label_path, image_directory, 1)
         AUGMENTATIONS_TEST = Compose([FFT_augm(conf['use_fft'])])
         test_data = Augm_Sequence(train_images, None, batch_size, AUGMENTATIONS_TEST, shuffle=False)
         with open(os.path.join(cp_dir_time, 'query_compl{}.csv'.format(epoch_start)), 'w') as csvfile:
