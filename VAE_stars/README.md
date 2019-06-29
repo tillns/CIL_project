@@ -2,30 +2,53 @@
 A variational autoencoder model for star image generation.
 
 ## Paths
-- All paths have to be set in ...
-
+- The path to the folder containing the labeled images and the path to the CSV file containing the image labels have to be set inside ```star_vae_train.py```
 
 ## Execution
 ### Training
 
-```python classifier.py```
+```python star_vae_train.py```
 
 Or on the cluster:
 
-```bsub -n 20 -W 24:00 -o log_file -R "rusage[mem=5000, ngpus_excl_p=1]" -R "select[gpu_model0==TeslaV100_SXM2_32GB]" python classifier.py --is_cluster=True```
+```bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python star_vae_train.py"```
 
-### Image Geneneration
+The weights of the generative model (decoder) are subsequently saved inside ```/ckpt_generative```.
 
-```python classifier.py --test_on_query=True --restore_ckpt=True --ckpt_path=/path/to/checkpoint/cp####.ckpt.data-00000-of-00001```
+### Star image generation
+
+```python generate_star_images.py```
 
 Or on the cluster:
 
-```bsub -n 20 -W 1:00 -o log_file -R "rusage[mem=5000, ngpus_excl_p=1]" -R "select[gpu_model0==TeslaV100_SXM2_32GB]" python classifier.py --is_cluster=True --test_on_query=True --restore_ckpt=True --ckpt_path=/path/to/checkpoints/cp####.ckpt.data-00000-of-00001```
+```bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python generate_star_images.py```
 
-Where in both cases ```/path/to/checkpoint/cp####.ckpt.data-00000-of-00001``` is a valid path to the checkpoint and ```####``` is replaced with the checkpoint number.
+The generated 28x28 star images are subsequently saved inside ```/generated```.
+
+### Complete image generation
+
+```python generate_complete_images.py```
+
+Or on the cluster:
+
+```bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python generate_complete_images.py```
+
+The generated 1000x1000 galaxy images are subsequently saved inside ```/generated```.
+
+### Complete image evaluation
+
+```python evaluate_complete_images.py```
+
+Or on the cluster:
+
+```bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python evaluate_complete_images.py```
+
+The generated 1000x1000 galaxy images inside ```/generated``` are evaluated. The similarity scores are stored inside ```scorefile.csv```.
 
 ## Requirements
 
-- tensorflow
-- cv2
-- numpy
+- tensorflow-gpu==2.0.0-alpha0
+- opencv-python==4.1.0.25
+- numpy==1.16.3
+- joblib==0.13.2
+- scikit-learn==0.20.3
