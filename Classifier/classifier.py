@@ -210,8 +210,9 @@ if __name__ == '__main__':
         Train model on the scored data set.
         """
         cp_dir_time = os.path.join(checkpoint_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
-        if not os.path.exists(cp_dir_time):
-            os.makedirs(cp_dir_time)
+        code_dir = os.path.join(cp_dir_time, "code")
+        if not os.path.exists(code_dir):
+            os.makedirs(code_dir)
         cp_path = os.path.join(cp_dir_time, "cp-{epoch:04d}.ckpt")
         cp_callback = tf.keras.callbacks.ModelCheckpoint(cp_path,
                                                          save_weights_only=True, save_best_only=percentage_train<1,
@@ -266,9 +267,8 @@ if __name__ == '__main__':
                         if conf['residual']:
                             layer.projection_model.summary(print_fn=lambda mylambda: file.write(mylambda + '\n'))
 
-            cp_command = 'cp {} {}'.format(os.path.join(classifier_dir, "{}"), cp_dir_time)
-            os.system(cp_command.format("classifier.py"))
-            os.system(cp_command.format("config.yaml"))
+            os.system("cp {} {}".format(os.path.join(classifier_dir, "*.py"), code_dir))
+            os.system('cp {} {}'.format(os.path.join(classifier_dir, "config.yaml"), cp_dir_time))
 
         compose_list = [HorizontalFlip(p=0.5), VerticalFlip(p=0.5), ShiftScaleRotate(shift_limit=0.2, scale_limit=0,
                         rotate_limit=0, border_mode=cv2.BORDER_CONSTANT, p=1)]
@@ -285,7 +285,7 @@ if __name__ == '__main__':
         val_data = np.array([]).reshape((-1, 1))
         train_images, train_labels, test_images, test_labels, _ = load_dataset(conf, save_np_to_mem, classifier_dir,
                                                                                test_on_query, label_path,
-                                                                               image_directory)
+                                                                               image_directory, percentage_train)
         while True:
             # train the network
             if percentage_train < 1:

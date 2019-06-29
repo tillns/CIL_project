@@ -1,30 +1,19 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-# !pip3 install tensorflow-gpu==2.0.0-alpha0
 import tensorflow as tf
-import glob
-import imageio
-import matplotlib.pyplot as plt
 import numpy as np
-import os
 import PIL
-import time
-import os, itertools, pickle
+import os
 from PIL import Image
 import math
-from IPython import display
-import matplotlib
-# matplotlib.use('Agg')
-from random import randint
-import sys
-from collections import OrderedDict
 import yaml
-from random import shuffle
 from datetime import datetime
 from tensorflow.python.keras.engine import training_utils
 import cv2
-from Models import Models, FactorLayer, Padder, SigmoidLayer, get_pad
+from Models import Models, get_custom_objects
 from create_complete_images import create_complete_images
-import joblib
+from img_scorer import load_km_with_conf, load_rf_with_conf, score_tensor_with_rf, \
+    score_tensor_with_keras_model, km_transform
+from CustomCallbacks import CallbackList
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # disables some annoying tensorflow warnings
 """### Set initial parameters"""
 
@@ -65,18 +54,12 @@ vmax = conf['vmax']
 conditional = conf['conditional']
 
 
-def transform(numpy_image_array):
+def transform_norm(numpy_image_array):
     return numpy_image_array / 255.0 * (vmax-vmin) + vmin
 
 
-def detransform(numpy_image_array):
+def detransform_norm(numpy_image_array):
     return (numpy_image_array - vmin) / (vmax-vmin) * 255.0
-
-def jitter(numpy_image_array, total_padding):
-    return_array = get_pad(numpy_image_array, total_padding=total_padding, constant_values=vmin)
-    view_array = return_array[:, :, :, 0].numpy()
-    return return_array[:, total_padding//2:-total_padding//2, total_padding//2:-total_padding//2]
-
 
 
 def load_dataset():
@@ -87,7 +70,7 @@ def load_dataset():
         for filename in os.listdir(image_directory):
             if filename.endswith(".png") and not filename.startswith("._"):
                 img = Image.open(os.path.join(image_directory, filename)).resize((image_size, image_size))
-                img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
+                img_np = transform_norm(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
                 images.append(img_np)
         dataset = np.stack(images)
     else:
@@ -100,7 +83,7 @@ def load_dataset():
             label_vec[label] += 1
             for img_name in sorted(os.listdir(folder_path)):
                 img = Image.open(os.path.join(folder_path, img_name)).resize((image_size, image_size))
-                img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
+                img_np = transform_norm(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)))
                 images.append(img_np)
                 label_list.append(label_vec)
         dataset = np.stack(images)
@@ -155,130 +138,9 @@ def generator_loss(D_fake_logits):
         return cross_entropy(label_one, D_fake_logits)
 
 
-def alternative_gen_loss(generated_image, real_image):
-    return tf.reduce_mean(tf.abs(generated_image - real_image))
-
-
 generator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr_decay'])
 discriminator_optimizer = tf.keras.optimizers.Adam(conf['lr'], decay=conf['lr_decay'])
 
-
-class CallbackList(object):
-    def __init__(self, callbacks):
-        assert len(callbacks) == len(models)
-        self.callbacks = []
-        for model_kind in models:
-            for callback in callbacks:
-                if model_kind in callback.log_dir:
-                    self.callbacks.append(callback)
-
-    def set_model(self, model_list):
-        assert len(model_list) == len(self.callbacks)
-        assert len(models) == len(model_list)
-        for model_kind in models:
-            for i, model in enumerate(model_list):
-                if model_kind == model.name:
-                    self.callbacks[i].set_model(model)
-
-    def set_params(self, verbose):
-        gen_metrics = ['gen_loss']
-        dis_metrics = ['dis_loss']
-        if do_validation:
-            dis_metrics.append('dis_val_loss')
-            dis_metrics.append('min_dis_val_loss')
-            dis_metrics.append('gen_val_loss')
-            dis_metrics.append('min_gen_val_loss')
-        self.params = {'dis': {
-            'batch_size': batch_size,
-            'epochs': num_epochs,
-            'steps': num_train_it,
-            'samples': train_len,
-            'verbose': verbose,
-            'do_validation': do_validation,
-            'metrics': dis_metrics,  # not sure here
-        }, 'gen': {
-            'batch_size': batch_size,
-            'epochs': num_epochs,
-            'steps': num_train_it,
-            'samples': train_len,
-            'verbose': verbose,
-            'do_validation': do_validation,
-            'metrics': gen_metrics,  # not sure here
-        }, 'comb': {
-            'batch_size': batch_size,
-            'epochs': num_epochs,
-            'steps': num_train_it,
-            'samples': train_len,
-            'verbose': verbose,
-            'do_validation': do_validation,
-            'metrics': gen_metrics + dis_metrics,  # not sure here
-        }}
-        for ind, callback in enumerate(self.callbacks):
-            callback.set_params(self.params[models[ind]])
-
-    def get_params(self, type='comb'):
-        return self.params[type]
-
-    def _call_begin_hook(self, mode):
-        for callback in self.callbacks:
-            if mode == 'train':
-                callback.on_train_begin()
-            else:
-                if "dis" in callback.log_dir:
-                    callback.on_test_begin()
-
-    def _call_end_hook(self, mode):
-        for callback in self.callbacks:
-            if mode == 'train':
-                callback.on_train_end()
-            else:
-                if "dis" in callback.log_dir:
-                    callback.on_test_end()
-
-    def stop_training(self, bool_var):
-        for callback in self.callbacks:
-            callback.model.stop_training = bool_var
-
-    def duplicate_logs_for_models(self, logs):
-        if models[0] in logs:
-            return logs
-        duplicated_logs = {}
-        for model_kind in models:
-            duplicated_logs[model_kind] = logs
-        return duplicated_logs
-
-    def on_epoch_begin(self, epoch, logs=None):
-        self.duplicate_logs_for_models(logs)
-        for i, callback in enumerate(self.callbacks):
-            callback.on_epoch_begin(epoch, logs[models[i]])
-
-    def on_epoch_end(self, epoch, logs=None):
-        self.duplicate_logs_for_models(logs)
-        # print("Logs on epoch end: {}".format(logs))
-        for i, callback in enumerate(self.callbacks):
-            # print("Logs at {}: {}".format(models[i], logs[models[i]]))
-            callback.on_epoch_end(epoch, logs[models[i]])
-
-    def _call_batch_hook(self, state_str, beginorend, iteration, logs=None, modelkind=None):
-        self.duplicate_logs_for_models(logs)
-        for i, callback in enumerate(self.callbacks):
-            if modelkind is None or modelkind in callback.log_dir:
-                if state_str == 'train':
-                    if beginorend == 'begin':
-                        callback.on_train_batch_begin(iteration, logs[models[i]])
-                    else:
-                        callback._enable_trace()  # I have absolutely no idea why, but it works here
-                        callback.on_batch_end(iteration, logs[models[i]])
-                else:
-                    if "dis" in callback.log_dir:  # only discriminator is tested
-                        if beginorend == 'begin':
-                            callback.on_test_batch_begin(iteration, logs[models[i]])
-                        else:
-                            callback.on_test_batch_end(iteration, logs[models[i]])
-
-
-def get_mean(some_list):
-    return sum(some_list) / len(some_list)
 
 def one_hot(batch_y, num_classes):
     y_ = np.zeros((batch_y.shape[0], num_classes))
@@ -297,7 +159,7 @@ def generate_and_save_images(model, epoch, test_input):
         predictions = model([test_input, labels], training=False)
     else:
         predictions = model(test_input, training=False)
-    predictions = detransform(predictions)
+    predictions = detransform_norm(predictions)
     res = predictions.shape[1]
     depth = predictions.shape[3]
 
@@ -311,38 +173,6 @@ def generate_and_save_images(model, epoch, test_input):
         dist * (j + 1) + j * res:dist * (j + 1) + res * (j + 1)] = predictions[k]
 
     cv2.imwrite(os.path.join(save_image_path, 'image_at_epoch_{:05d}.png'.format(epoch)), output_image)
-
-
-"""Use `imageio` to create an animated gif using the images saved during training."""
-
-
-def make_gif():
-    anim_file = os.path.join(save_image_path, 'dcgan.gif')
-    epoch_imgs = []
-    filenames = glob.glob(os.path.join(save_image_path, 'image*.png'))
-    filenames = sorted(filenames)
-    image = imageio.imread(filenames[-1])
-    biggest_res = image.shape
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    bottomLeft = (biggest_res[0] // 4, biggest_res[1] // 4)
-    fontScale = 1
-    fontColor = (255, 255, 255)
-    lineType = 2
-    for i, filename in enumerate(filenames):
-        image = imageio.imread(filename)
-        image = cv2.resize(image, (biggest_res[0], biggest_res[1]))
-        cv2.putText(image, "{:05d}".format(i), bottomLeft, font, fontScale, fontColor, lineType)
-        epoch_imgs.append(image)
-
-    imageio.mimsave(anim_file, epoch_imgs, 'GIF', duration=0.2)
-
-    import IPython
-    if IPython.version_info > (6, 2, 0, ''):
-        print("Python version high enough, but gif doesn't seem to show...")
-        display.Image(filename=anim_file)
-    else:
-        print("Python version to old to display file directly. Trying html...")
-    IPython.display.HTML('<img src="{}">'.format(anim_file))
 
 
 
@@ -394,7 +224,7 @@ tb_path_gen = os.path.join(tb_path, "gen")
 tb_path_dis = os.path.join(tb_path, "dis")
 tb_callback_gen = tf.keras.callbacks.TensorBoard(log_dir=tb_path_gen)
 tb_callback_dis = tf.keras.callbacks.TensorBoard(log_dir=tb_path_dis)
-callbacks = CallbackList([tb_callback_dis, tb_callback_gen])
+callbacks = CallbackList([tb_callback_dis, tb_callback_gen], models)
 
 save_image_path = os.path.join(checkpoint_dir, "outputs")
 if not os.path.exists(save_image_path):
@@ -404,7 +234,7 @@ myModels = Models(conf)
 discriminator = myModels.get_discriminator_model()
 generator = myModels.get_generator_model()
 callbacks.set_model([discriminator, generator])
-callbacks.set_params(1)
+callbacks.set_params(do_validation, batch_size, num_epochs, num_train_it, train_len, 1)
 progbar = training_utils.get_progbar(generator, 'steps')
 progbar.params = callbacks.get_params()
 progbar.params['verbose'] = 1
@@ -436,17 +266,9 @@ progbar.on_train_begin()
 if do_validation:
     min_dis_val_loss = 10000
     min_gen_val_loss = 10000
-    if conf['val_model_kind'] == "nn":
-        val_cp_path = os.path.join(classifier_cp_dir, conf['nn_val_model_path'])
-        val_model_path = os.path.join("/".join(val_cp_path.split("/")[:-1]), "model_config.json")
-        with open(val_model_path) as json_file:
-            json_config = json_file.read()
-        custom_objects = {'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer': SigmoidLayer}
-        val_model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
-        val_model.load_weights(val_cp_path)
-        val_model.summary()
-    else:
-        val_model = joblib.load(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"), conf['rf_val_model_path']))
+    nn_valmodel, nn_valconf = load_km_with_conf(os.path.join(classifier_cp_dir, conf['nn_val_model_path']))
+    rf_model, rf_conf = load_rf_with_conf(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"),
+                                                       conf['rf_val_model_path']))
 
 json_config = generator.to_json()
 with open(os.path.join(checkpoint_dir, 'gen_config.json'), 'w') as json_file:
@@ -469,10 +291,6 @@ for epoch in range(num_epochs):
         x_ = train_images[indices[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]]
         labels = train_labels[indices[iteration * batch_size:min((iteration + 1) * batch_size, train_len)]] if \
             conditional else None
-        # x_ = jitter(x_, conf['jitter_padding'])
-        #for i in range(2):
-            #if randint(0, 1):
-                #x_ = np.flip(x_, axis=i + 1)  # randomly flip x- and y-axis
         if False:
             img_np3 = x_[0, :, :, 0]
             plt.imshow(img_np3, cmap='gray', vmin=conf['vmin'], vmax=conf['vmax'])
@@ -490,30 +308,21 @@ for epoch in range(num_epochs):
         dis_val_loss = 0
         gen_val_loss = 0
         if image_size == 28:
-            np_img_tensor = create_complete_images(generator, conf['vmin'], conf['num_val_images'], conf['num_classes'])
-            if conf['val_model_kind'] == "rf":
-                hist_list = []
-                for i in range(conf['num_val_images']):
-                    hist_list.append(np.histogram(np_img_tensor[i], bins=10)[0])  # todo: maybe make bins more general
-                hist_tensor = np.stack(hist_list)
-                score = val_model.predict(hist_tensor)
-            else:
-                reduced_imgs = []
-                for i in range(conf['num_val_images']):
-                    reduced_imgs.append(Image.fromarray(np_img_tensor[i, :, :, 0]).
-                                        resize((val_model.input.shape[1], val_model.input.shape[2])))
-                np_reduced_imgs = np.stack(reduced_imgs)
-                np_reduced_imgs = np.expand_dims(np_reduced_imgs, axis=3)
-                score = val_model(np_reduced_imgs)
-
-            label_eight = np.ones((10, 1))*8
-            gen_val_loss = tf.reduce_mean(tf.square(score-label_eight))
+            np_img_tensor = detransform_norm(create_complete_images(generator, conf['vmin'], conf['num_val_images'],
+                                                                    conf['num_classes']))
+            rf_score = score_tensor_with_rf(np_img_tensor, rf_model, rf_conf)
+            nn_score = score_tensor_with_keras_model(km_transform(np_img_tensor, nn_valconf['use_fft']),
+                                                             nn_valmodel, nn_valconf['batch_size'])
+            rf_score = np.expand_dims(rf_score, axis=1)
+            score = np.concatenate((rf_score, nn_score))
+            label_eight = np.ones((conf['num_val_images']*2, 1))*8
+            gen_val_loss = tf.reduce_mean(tf.abs(score-label_eight))
 
         for iteration in range(num_test_it):
             x_ = test_images[iteration*batch_size:min(test_len, (iteration+1)*batch_size)]
             labels = test_labels[iteration*batch_size:min(test_len, (iteration+1)*batch_size)] if conditional else None
-            real_output = discriminator([x_, labels], training=False) if conditional else discriminator(x_,
-                                                                                                      training=False)
+            real_output = discriminator([x_, labels], training=False) if conditional else \
+                discriminator(x_, training=False)
             if image_size == 125:
                 noise = tf.random.normal([batch_size, gconf['input_neurons']])
                 generated_images = generator([noise, labels], training=False) if conditional else \
@@ -539,7 +348,8 @@ for epoch in range(num_epochs):
 
 
     # Save the model every few epochs
-    if (not do_validation and (epoch + 1) % conf['period_to_save_cp'] == 0) or (do_validation and save_new_cp or (epoch + 1) % 40 == 0):
+    if (not do_validation and (epoch + 1) % conf['period_to_save_cp'] == 0) or \
+            (do_validation and save_new_cp or (epoch + 1) % 40 == 0):
 
         try:
             checkpoint_path = os.path.join(checkpoint_dir, "cp_{}_epoch{}".format("{}", epoch + 1))

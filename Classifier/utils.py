@@ -55,7 +55,7 @@ def get_max_val_fft():
 
 def transform(img_np, use_fft):
     if use_fft:
-        img_np = 20 * np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np))) ** 2 + np.power(1.0, -20)) / get_max_val_fft()
+        img_np = np.float32(20 * np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np))) ** 2 + np.power(1.0, -20)) / get_max_val_fft())
     else:
         img_np = img_np / 255
     return img_np
@@ -70,9 +70,8 @@ class FFT_augm(DualTransform):
         return transform(img, self.use_fft)
 
 
-def load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query, label_path, image_directory):
+def load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query, label_path, image_directory, percentage_train):
     train_images, train_labels, test_images, test_labels = None, None, None, None
-    percentage_train = conf['percentage_train']
     image_size = conf['image_size']
     try:
         f = open(label_path, 'r')

@@ -4,16 +4,15 @@ image_channels: 1
 vmin: -1
 vmax: 1  # use either -1 and 1 or 0 and 1
 percentage_train: 0.9  # validation doesn't work with star patches yet
-val_model_kind: rf  # nn for neural network or rf for random forest
+#val_model_kind: rf  # nn for neural network or rf for random forest
 period_to_save_cp: 5
 num_epochs: 400
 batch_size: 200
 lr: 0.0001
 lr_decay: 0.00  # experiment
 gan_loss: lsgan
-nn_val_model_path: 3convs/cp-0137.ckpt
-rf_val_model_path: random_forest_10_0.9.sav
-jitter_padding: 2  # randomly translate input batch by padding black pixels. Use multiple of 2.
+nn_val_model_path: res1000/fft_4convs_8features_MAE/cp-0140.ckpt
+rf_val_model_path: np_out/whole_radial_all_0.99_29binsbutbest/random_forest_119_0.99.sav
 num_val_images: 100
 conditional: True
 

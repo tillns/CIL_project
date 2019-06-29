@@ -1,146 +1,10 @@
 import tensorflow as tf
-from random import randint
+import os
+import sys
+home_dir = os.path.expanduser("~")
+sys.path.insert(0, os.path.join(home_dir, "CIL_project/Classifier"))
+from CustomLayers import Padder, getNormLayer, get_custom_objects
 
-"""###Define some custom layers"""
-
-
-def get_pad(x, total_padding=0, constant_values=0):
-    if total_padding == 0:
-        return x
-    elif total_padding > 0:
-        rand1 = randint(0, total_padding)
-        rand2 = randint(0, total_padding)
-        return tf.pad(x, tf.constant([[0, 0], [rand1, total_padding - rand1], [rand2, total_padding - rand2], [0, 0]]),
-                      constant_values=constant_values)
-    else:
-        total_padding = abs(total_padding)
-        rand1 = randint(0, total_padding)
-        rand2 = randint(0, total_padding)
-        s = x.shape
-        return x[:, rand1:s[1] - total_padding + rand1, rand2:s[2] - total_padding + rand2]
-
-
-class Pixel_norm(tf.keras.layers.Layer):
-    def __init__(self, epsilon=1e-8):
-        super(Pixel_norm, self).__init__()
-        self.epsilon = epsilon
-
-    def call(self, x):
-        # print("input shape in pixel norm layer: {}".format(x.shape))
-        return x * tf.math.rsqrt(tf.reduce_mean(tf.square(x), axis=1, keepdims=True) + self.epsilon)
-
-    def get_config(self):
-        return {'epsilon': self.epsilon}
-
-
-class FactorLayer(tf.keras.layers.Layer):
-    def __init__(self, factor):
-        super(FactorLayer, self).__init__()
-        self.factor = factor
-
-    def call(self, x):
-        return self.factor * x
-
-    def get_config(self):
-        return {'factor': self.factor}
-
-class ResBlock(tf.keras.layers.Layer):
-    def __init__(self, conf, downsample, features, last_features, **kwargs):
-        super(ResBlock, self).__init__(**kwargs)
-        self.conf = conf
-        self.model = tf.keras.Sequential()
-        self.downsample = downsample
-        self.features = features
-        self.last_features = last_features
-        self.projection = features != last_features or downsample
-        downsample_stride = 1 if conf['use_max_pool'] else conf['downsample_factor']
-        for j in range(conf['num_convs_per_block']):
-            downsample_this_conv = downsample and ((j == conf['num_convs_per_block'] - 1 and
-                                                    not conf['downsample_with_first_conv']) or
-                                                   (j == 0 and conf['downsample_with_first_conv']))
-            strides = downsample_stride if downsample_this_conv else 1
-            self.model.add(tf.keras.layers.Conv2D(features, (conf['kernel'], conf['kernel']),
-                                                  padding='same', strides=strides, use_bias=conf['use_bias']))
-            self.model.add(getNormLayer(conf['norm_type']))
-            self.model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
-            if downsample_this_conv and conf['use_max_pool']:
-                self.model.add(tf.keras.layers.MaxPool2D(pool_size=conf['downsample_factor']))
-        if conf['residual']:
-            self.projection_model = tf.keras.Sequential()
-            if self.projection:
-                if self.downsample and not self.conf['use_max_pool']:
-                    self.projection_model.add(tf.keras.layers.Conv2D(self.features, (self.conf['downsample_factor'],
-                                                                          self.conf['downsample_factor']),
-                                                          padding='same', strides=self.conf['downsample_factor'],
-                                                          use_bias=self.conf['use_bias']))
-                elif conf['use_max_pool']:
-                    self.projection_model.add(tf.keras.layers.Conv2D(self.features, (1, 1), padding='same', strides=1,
-                                                          use_bias=self.conf['use_bias']))
-                    if self.downsample:
-                        self.projection_model.add(tf.keras.layers.MaxPool2D(pool_size=self.conf['downsample_factor']))
-
-    def call(self, x, training=False):
-        input_tensor = x
-        x = self.model(x, training=training)
-        if self.conf['residual']:
-            x += self.projection_model(input_tensor, training=training)
-        return x
-
-    def get_config(self):
-        config = {'conf' : self.conf, 'downsample': self.downsample,
-                  'features' : self.features, 'last_features' : self.last_features}
-        base_config = super(ResBlock, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
-
-def getNormLayer(norm_type='batch', momentum=0.9, epsilon=1e-5):
-    if norm_type == 'pixel':
-        return Pixel_norm(epsilon)
-    if norm_type == 'batch':
-        return tf.keras.layers.BatchNormalization(momentum=momentum, epsilon=epsilon)
-    return FactorLayer(1)
-
-
-class SigmoidLayer(tf.keras.layers.Layer):
-    def __init__(self):
-        super(SigmoidLayer, self).__init__()
-
-    def call(self, x):
-        return tf.keras.activations.sigmoid(x)
-
-    def get_config(self):
-        return {}
-
-class TanhLayer(tf.keras.layers.Layer):
-    def __init__(self):
-        super(TanhLayer, self).__init__()
-
-    def call(self, x):
-        return tf.keras.activations.tanh(x)
-
-    def get_config(self):
-        return {}
-
-
-
-# This is kind of a spetial implementation as the padding is TOTAL, so both sides combined
-class Padder(tf.keras.layers.Layer):
-    def __init__(self, padding=6, **kwargs):
-        super(Padder, self).__init__(**kwargs)
-        self.padding = padding
-
-    def call(self, x):
-        return get_pad(x, self.padding)
-
-    def get_config(self):
-        config = {'padding': self.padding}
-        base_config = super(Padder, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
-
-    def compute_output_shape(self, input_shape):
-        output_shape = input_shape
-        output_shape[1] += self.padding
-        output_shape[2] += self.padding
-        return output_shape
 
 
 class Models():
@@ -195,7 +59,7 @@ class Models():
                 if dconf['dropout'] > 0:
                     model.add(tf.keras.layers.Dropout(dconf['dropout']))
             model.add(tf.keras.layers.Dense(1, use_bias=dconf['use_bias'], kernel_regularizer=kernel_regularizer))
-            model.add(SigmoidLayer())
+            model.add(tf.keras.layers.Activation('sigmoid'))
         elif self.model_kind == 2:
             while res > conf['min_res']:
                 self.dis_features.append(features)
@@ -211,7 +75,7 @@ class Models():
 
             model.add(tf.keras.layers.Flatten())
             model.add(tf.keras.layers.Dense(1))
-            #model.add(SigmoidLayer())
+            #model.add(tf.keras.layers.Activation('sigmoid'))
 
         elif self.model_kind == 3:
             if dconf['strided_conv']:
@@ -307,9 +171,9 @@ class Models():
                         model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
                     else:
                         if conf['vmin'] == 0 and conf['vmax'] == 1:
-                            model.add(SigmoidLayer())
+                            model.add(tf.keras.layers.Activation('sigmoid'))
                         elif conf['vmin'] == -1 and conf['vmax'] == 1:
-                            model.add(TanhLayer())
+                            model.add(tf.keras.layers.Activation('tanh'))
 
                 if res == 128:
                     model.add(Padder(padding=-3))  # 128 -> 125
@@ -334,9 +198,9 @@ class Models():
                     model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
                 else:
                     if conf['vmin'] == 0 and conf['vmax'] == 1:
-                        model.add(SigmoidLayer())
+                        model.add(tf.keras.layers.Activation('sigmoid'))
                     elif conf['vmin'] == -1 and conf['vmax'] == 1:
-                        model.add(TanhLayer())
+                        model.add(tf.keras.layers.Activation('tanh'))
                     model.add(Padder(padding=-3))
 
         elif self.model_kind == 3:
@@ -364,9 +228,9 @@ class Models():
                 model.add(tf.keras.layers.UpSampling2D())
                 model.add(tf.keras.layers.Conv2D(1, self.kernel, strides=(1, 1), padding='same', use_bias=gconf['use_bias']))
             if conf['vmin'] == 0 and conf['vmax'] == 1:
-                model.add(SigmoidLayer())
+                model.add(tf.keras.layers.Activation('sigmoid'))
             elif conf['vmin'] == -1 and conf['vmax'] == 1:
-                model.add(TanhLayer())
+                model.add(tf.keras.layers.Activation('tanh'))
 
         elif self.model_kind == 4:
             input_latent = tf.keras.layers.Input((gconf['input_neurons'],))
