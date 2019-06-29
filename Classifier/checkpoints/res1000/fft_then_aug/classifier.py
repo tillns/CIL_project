@@ -187,9 +187,8 @@ if __name__ == '__main__':
         image_size = conf['image_size']
         batch_size = conf['batch_size']
         train_images, _, _, _, img_list = load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query,
-                                                       label_path, image_directory, 1)
-        AUGMENTATIONS_TEST = Compose([]) if conf['transform_before'] else Compose([FFT_augm(conf['use_fft'])])
-
+                                                       label_path, image_directory)
+        AUGMENTATIONS_TEST = Compose([FFT_augm(conf['use_fft'])])
         test_data = Augm_Sequence(train_images, None, batch_size, AUGMENTATIONS_TEST, shuffle=False)
         with open(os.path.join(cp_dir_time, 'query_compl{}.csv'.format(epoch_start)), 'w') as csvfile:
             filewriter = csv.writer(csvfile, delimiter=',',
@@ -211,9 +210,8 @@ if __name__ == '__main__':
         Train model on the scored data set.
         """
         cp_dir_time = os.path.join(checkpoint_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
-        code_dir = os.path.join(cp_dir_time, "code")
-        if not os.path.exists(code_dir):
-            os.makedirs(code_dir)
+        if not os.path.exists(cp_dir_time):
+            os.makedirs(cp_dir_time)
         cp_path = os.path.join(cp_dir_time, "cp-{epoch:04d}.ckpt")
         cp_callback = tf.keras.callbacks.ModelCheckpoint(cp_path,
                                                          save_weights_only=True, save_best_only=percentage_train<1,
@@ -268,8 +266,9 @@ if __name__ == '__main__':
                         if conf['residual']:
                             layer.projection_model.summary(print_fn=lambda mylambda: file.write(mylambda + '\n'))
 
-            os.system("cp {} {}".format(os.path.join(classifier_dir, "*.py"), code_dir))
-            os.system('cp {} {}'.format(os.path.join(classifier_dir, "config.yaml"), cp_dir_time))
+            cp_command = 'cp {} {}'.format(os.path.join(classifier_dir, "{}"), cp_dir_time)
+            os.system(cp_command.format("classifier.py"))
+            os.system(cp_command.format("config.yaml"))
 
         compose_list = [HorizontalFlip(p=0.5), VerticalFlip(p=0.5), ShiftScaleRotate(shift_limit=0.2, scale_limit=0,
                         rotate_limit=0, border_mode=cv2.BORDER_CONSTANT, p=1)]
@@ -286,7 +285,7 @@ if __name__ == '__main__':
         val_data = np.array([]).reshape((-1, 1))
         train_images, train_labels, test_images, test_labels, _ = load_dataset(conf, save_np_to_mem, classifier_dir,
                                                                                test_on_query, label_path,
-                                                                               image_directory, percentage_train)
+                                                                               image_directory)
         while True:
             # train the network
             if percentage_train < 1:
