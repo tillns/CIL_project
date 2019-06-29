@@ -159,7 +159,6 @@ class Augm_Sequence(Sequence):
             np.random.shuffle(self.indices)
 
 
-
 def get_latest_cp(checkpoint_dir, epoch=None):
     if not os.path.exists(checkpoint_dir):
         return None
