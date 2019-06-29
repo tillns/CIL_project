@@ -516,18 +516,16 @@ def roi_histograms(image, conf):
     psd_log = 10 * np.log10(psd_fft_shift + eps)
     psd_noshifted = np.abs(psd_fft)**2
     psd_noshifted_log = 10 * np.log10(psd_noshifted + eps)
-    range_fft = (-120, 180)
+    ranges_fft = [(range_fft[0], range_fft[1]) for range_fft in conf['ranges']]
 
     hists = []
 
     if roi_conf['whole_img']['include']:
         if not roi_conf['whole_img']['prepr_fft']:
-            whole_hist, _ = np.histogram(np_image, bins=roi_conf['whole_img']['num_bins'], range=range_normal)
+            hists.append(np.histogram(np_image, bins=roi_conf['whole_img']['num_bins'], range=range_normal)[0])
         else:
-            extra_whole_hist, _ = np.histogram(psd_log, bins=33, range=(10, 90))
-            hists.append(extra_whole_hist)
-            whole_hist, _ = np.histogram(psd_log, bins=roi_conf['whole_img']['num_bins'], range=range_fft)
-        hists.append(whole_hist)
+            for num_range, range_fft in enumerate(ranges_fft):
+                hists.append(np.histogram(psd_log, bins=roi_conf['whole_img']['num_bins'][num_range], range=range_fft)[0])
 
 
     # example for subset of frequencies (the frequency spectrum is very symmetric)
@@ -559,9 +557,9 @@ def roi_histograms(image, conf):
             mask = _create_circular_mask(1000, 1000, [500, 500], radius)
             if roi_conf['radial']['prepr_fft']:
                 if roi_conf['radial']['shift_fft']:
-                    hists.append(_compute_histogram_from_mask(mask, psd_log, 33, (10, 90)))
-                    hists.append(_compute_histogram_from_mask(mask, psd_log, roi_conf['radial']['num_bins'][num_rad],
-                                                              range_fft))
+                    for num_range, range_fft in enumerate(ranges_fft):
+                        hists.append(_compute_histogram_from_mask(mask, psd_log, roi_conf['radial']['num_bins'][num_rad][num_range],
+                                                                  range_fft))
                 else:
                     hists.append(_compute_histogram_from_mask(mask, psd_noshifted_log,
                                                               roi_conf['radial']['num_bins'][num_rad], range_fft))
