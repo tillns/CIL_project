@@ -269,7 +269,7 @@ if __name__ == '__main__':
             os.system("cp {} {}".format(os.path.join(classifier_dir, "*.py"), code_dir))
             os.system('cp {} {}'.format(os.path.join(classifier_dir, "config.yaml"), cp_dir_time))
 
-        aug = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=conf['rot_range'],
+        aug = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=0,
                                                               zoom_range=0,  # used to be 0.15
                                                               width_shift_range=0.2, height_shift_range=0.2,
                                                               # used to be 0.2 both
