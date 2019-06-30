@@ -2,6 +2,11 @@
 
 Similarity Scorer based on an ensemble of RandomForests
 
+## Building the CPP code
+To run the main file, the cpp code has to be built. To do this, use the following command in this folder:
+
+```python setup.py build_ext -i```
+
 ## Training and prediction of kaggle query
 
 ```python random_forest.py --data-directory=path/to/cosmology_aux_data_170429 --numpy-directory=./np_out```
