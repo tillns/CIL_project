@@ -44,5 +44,41 @@ if __name__ == "__main__":
         sample = (np.array(tf.sigmoid(samples_logits[j, :, :, :])).reshape(28, 28) * 255).astype(np.uint8)
         
         cv2.imwrite(output_dir_generated_images + "image" + str(j) + ".png", sample)
+
+
+
+#     num_rows = 4
+#     num_cols = 10
+
+
+#     interplimg = np.zeros((28 * num_rows, 28 * num_cols), dtype=np.uint8)
+    
+
+#     for i in range(num_rows):
+
+
+#         z0 = tf.random.normal(shape=(1, 16))
+#         z1 = tf.random.normal(shape=(1, 16))
+    
+#         delta = z1 - z0
+    
+    
+#         interpolated = np.zeros((28, num_cols * 28), dtype=np.uint8)
+    
+#         for j in range(num_cols):
         
+#             sample_logits = generative_net(z0 + (float(j) / float(num_cols - 1)) * delta)
         
+#             sample = (np.array(tf.sigmoid(sample_logits[0, :, :, :])).reshape(28, 28) * 255).astype(np.uint8)
+        
+#             interpolated[0:28, j*28:(j+1)*28] = sample
+            
+        
+#         interplimg[i*28:(i+1)*28, 0:28*num_cols] = interpolated
+        
+    
+    
+#     cv2.imwrite(output_dir_generated_images + "interpol" + ".png", interplimg)
+    
+    
+    
