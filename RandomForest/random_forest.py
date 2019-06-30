@@ -59,7 +59,7 @@ def train_model(arguments, dump_directory):
 
 
     base_model = sklearn.ensemble.RandomForestRegressor(criterion="mae", oob_score=True, random_state = arguments.random_seed)
-    ml_model = sklearn.model_selection.GridSearchCV(base_model, {"n_estimators": [5, 10, 50, 100]}, verbose=5, scoring='neg_mean_absolute_error')
+    ml_model = sklearn.model_selection.GridSearchCV(base_model, {"n_estimators": conf['n_estimators']}, verbose=5, scoring='neg_mean_absolute_error')
 
     print("Fitting...")
     ml_model.fit(train_features, train_labels)

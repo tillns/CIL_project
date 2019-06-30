@@ -31,7 +31,7 @@ import pywt
 # python setup.py build_ext -i
 try:
     import compute_hist
-    grad = True
+    use_grad = True
 except ModuleNotFoundError:
     use_grad = False
 
@@ -571,8 +571,9 @@ def roi_histograms(image, conf):
     if roi_conf['grad']['include'] and use_grad:
         # Todo: I think this only uses data without fft, add fft
 
-        gx = cv2.Sobel(psd_log, cv2.CV_32F, 1, 0, ksize=1)
-        gy = cv2.Sobel(psd_log, cv2.CV_32F, 0, 1, ksize=1)
+        grad_img = ((psd_log + 150.0) / 2.0).astype(np.uint8)
+        gx = cv2.Sobel(grad_img, cv2.CV_32F, 1, 0, ksize=1)
+        gy = cv2.Sobel(grad_img, cv2.CV_32F, 0, 1, ksize=1)
         
         msk = _create_circular_mask(1000, 1000, [500, 500], radius=120)
 
@@ -585,7 +586,7 @@ def roi_histograms(image, conf):
         
         compute_hist.compute_hist_func(mag_mskd[0:500,500:1000].compressed().flatten(), 
                                        angle_mskd[0:500,500:1000].compressed().flatten(), 
-                                       grad_hist, angle_mskd[0:500,500:1000].compressed().size, 9) 
+                                       grad_hist, angle_mskd[0:500,500:1000].compressed().size, roi_conf['grad']['num_bins'])
 
         hists.append(grad_hist)
 

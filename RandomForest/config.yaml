@@ -1,13 +1,18 @@
 histogram_type : ROI
-split_ratio: 0.9
-num_imgs_to_load: 1500
+split_ratio: 0.5
+num_imgs_to_load: 2700
+n_estimators:
+  - 7
+  - 14
+  - 70
+  - 130
 ranges:
       -
         - 10
         - 90
       -
-        - -60
-        - 120
+        - -120
+        - 180
 
 # specify histograms to include
 ROI_options:
@@ -37,12 +42,12 @@ ROI_options:
          # - 245
          #- - 150
          #  - 300
-         - -456
+         - -460
 
   grad:
-    include: False
+    include: True
     prepr_fft: True
-    num_bins: 36
+    num_bins: 9
 
   angle:
     include: False
