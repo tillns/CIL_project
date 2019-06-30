@@ -8,7 +8,7 @@ A similarity scorer using a Convolutional Neural Network.
 
 - Also, make sure that the root directory of this project is located in your home directory. Else ```classifier.py``` will not run properly.
 
-- Create a folder named ```numpy_data``` in this folder.
+- Create folders named ```numpy_data``` and ```checkpoints``` in this folder.
 
 
 ## Execution
