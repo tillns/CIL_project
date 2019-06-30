@@ -68,14 +68,14 @@ def train_model(arguments, dump_directory):
     # save model to directory
     joblib.dump(ml_model, _model_file_path(dump_directory, num_features, split_ratio))
 
-
-    print("Predicting test set...")
-    predictions = ml_model.predict(test_features)
-    mae = sklearn.metrics.mean_absolute_error(test_labels, predictions)
-    print("Finished Predicting, mean absolute error: {}".format(mae))
-    file = open("{}.txt".format(os.path.join(dump_directory, "loss")), "w")
-    file.write("MAE: {}".format(mae))
-    file.close()
+    if split_ratio < 1:
+        print("Predicting test set...")
+        predictions = ml_model.predict(test_features)
+        mae = sklearn.metrics.mean_absolute_error(test_labels, predictions)
+        print("Finished Predicting, mean absolute error: {}".format(mae))
+        file = open("{}.txt".format(os.path.join(dump_directory, "loss")), "w")
+        file.write("MAE: {}".format(mae))
+        file.close()
 
 def create_query_file(arguments, dump_directory):
     """Uses a trained classifier to predict the query results
