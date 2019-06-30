@@ -33,7 +33,7 @@ parser_dcgan.add_argument("--dir_scored_images", default="/cluster/home/hannepfa
 parser_dcgan.add_argument("--path_ckpt", 
                         default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt/checkpoint", type=str)
 parser_dcgan.add_argument("--path_ckpt_stable", 
-                        default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt_stable/checkpoint", type=str)
+                        default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt_stable", type=str)
 
 parser_dcgan.add_argument("--output_dir_generated_images", 
                         default="/cluster/home/hannepfa/CIL_project/DCGAN/generated", type=str)

@@ -75,14 +75,17 @@ def _load_labeled_images(arguments):
                 img = cv2.imread(os.path.join(arguments.dir_labeled_images, filename), cv2.IMREAD_GRAYSCALE)
         
         
-                arr = np.array(img, dtype=np.float32).reshape((1000, 1000, 1))
+                arr_padded = np.zeros((1024, 1024), dtype=np.float32)
+                arr_padded[12 : 12 + 1000, 12 : 12 + 1000] = np.array(img, dtype=np.float32)
 
                 # map the image data from [0, 255] to [-1.0, 1.0]
-                arr = np.subtract(arr, 127.5)
-                arr = np.divide(arr, 127.5)
+                arr_padded = np.subtract(arr_padded, 127.5)
+                arr_padded = np.divide(arr_padded, 127.5)
 
                 
-                images.append(arr)
+                arr_padded = arr_padded.reshape((1024, 1024, 1))
+                    
+                images.append(arr_padded)
 
                 
         return images
@@ -149,15 +152,18 @@ def _load_scored_images(arguments):
       
                 img = cv2.imread(os.path.join(arguments.dir_scored_images, filename), cv2.IMREAD_GRAYSCALE)
         
-        
-                arr = np.array(img, dtype=np.float32).reshape((1000, 1000, 1))
+                
+                arr_padded = np.zeros((1024, 1024), dtype=np.float32)
+                arr_padded[12 : 12 + 1000, 12 : 12 + 1000] = np.array(img, dtype=np.float32).reshape((1000, 1000))
 
                 # map the image data from [0, 255] to [-1.0, 1.0]
-                arr = np.subtract(arr, 127.5)
-                arr = np.divide(arr, 127.5)
-
+                arr_padded = np.subtract(arr_padded, 127.5)
+                arr_padded = np.divide(arr_padded, 127.5)
                 
-                images.append(arr)
+                
+                arr_padded = arr_padded.reshape((1024, 1024, 1))
+                
+                images.append(arr_padded)
 
                 
         return images
@@ -185,8 +191,10 @@ def _load_images(arguments):
     """ 
     
     labeled_images = _load_labeled_images(arguments)
+       
     scored_images = _load_scored_images(arguments)
     
+
     scored_images.extend(labeled_images)
     
     return np.stack(scored_images)  # conversion allows for batches to be extracted
@@ -222,10 +230,7 @@ def load_train_test_dataset(arguments, batch_size):
         
     num_images_train = int(num_images * arguments.frac_train)
     num_images_test = num_images - num_images_train
-    
-    print("num images train: {}".format(num_images_train))
-    print("num images test: {}".format(num_images_test))
-        
+            
     train_dataset = tf.data.Dataset.from_tensor_slices(
         images[:num_images_train, :, :, :]).shuffle(num_images_train).batch(batch_size)
     

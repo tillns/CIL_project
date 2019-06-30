@@ -34,47 +34,54 @@ def make_generator_model():
     model = tf.keras.Sequential()
     
     
-    model.add(layers.Dense(63 * 63 * 64, use_bias=True, 
+    model.add(layers.Dense(64 * 64 * 42, use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None),
-        bias_initializer=tf.keras.initializers.Constant(0.0),
-        input_shape=(100,)))
+        input_shape=(34,))) # consider changing latent dimension from 100 to e.g. 20
     model.add(layers.BatchNormalization(momentum=0.9, epsilon=1e-5))
     model.add(layers.ReLU())
-    model.add(layers.Reshape((63, 63, 64)))
+    model.add(layers.Reshape((64, 64, 42)))
     
-    assert model.output_shape == (None, 63, 63, 64) # NOTE: None is the batch size
+    assert model.output_shape == (None, 64, 64, 42) # NOTE: None is the batch size
     
+    
+    model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
 
-    model.add(layers.Conv2DTranspose(
-        32, (5, 5), strides=(2, 2), padding="same", use_bias=False, output_padding=0,
+    model.add(layers.Conv2D(
+        32, (5, 5), strides=(1, 1), padding="same", use_bias=False,
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
     model.add(layers.BatchNormalization(momentum=0.9, epsilon=1e-5))
     model.add(layers.ReLU())
     
-    assert model.output_shape == (None, 125, 125, 32)
+    assert model.output_shape == (None, 128, 128, 32)
     
     
-    model.add(layers.Conv2DTranspose(
-        16, (5, 5), strides=(2, 2), padding="same", use_bias=False, 
+    model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
+    
+    model.add(layers.Conv2D(
+        24, (5, 5), strides=(1, 1), padding="same", use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
     model.add(layers.BatchNormalization(momentum=0.9, epsilon=1e-5))
     model.add(layers.ReLU())
     
-    assert model.output_shape == (None, 250, 250, 16)
+    assert model.output_shape == (None, 256, 256, 24)
     
     
-    model.add(layers.Conv2DTranspose(
-        8, (5, 5), strides=(2, 2), padding="same", use_bias=False, 
+    model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
+    
+    model.add(layers.Conv2D(
+        16, (5, 5), strides=(1, 1), padding="same", use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
     model.add(layers.BatchNormalization(momentum=0.9, epsilon=1e-5))
     model.add(layers.ReLU())
     
-    assert model.output_shape == (None, 500, 500, 8)
+    assert model.output_shape == (None, 512, 512, 16)
     
     
-    model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+    model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
     
-    assert model.output_shape == (None, 1000, 1000, 1)
+    model.add(layers.Conv2D(1, (5, 5), strides=(1, 1), padding='same', use_bias=False, activation='tanh'))
+    
+    assert model.output_shape == (None, 1024, 1024, 1)
     
 
     return model
@@ -96,42 +103,41 @@ def make_discriminator_model():
     
     
     model.add(layers.Conv2D(
-        32, (5, 5), strides=(2, 2), padding='same', input_shape=[1000, 1000, 1], use_bias=False, 
+        16, (5, 5), strides=(2, 2), padding='same', input_shape=[1024, 1024, 1], use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
     model.add(layers.LeakyReLU(alpha=0.2))
     
-    assert model.output_shape == (None, 500, 500, 32)
+    assert model.output_shape == (None, 512, 512, 16)
     
 
     model.add(layers.Conv2D(
-        64, (5, 5), strides=(2, 2), padding='same', use_bias=False, 
+        24, (5, 5), strides=(2, 2), padding='same', use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
     model.add(layers.BatchNormalization(momentum=0.9, epsilon=1e-5))
     model.add(layers.LeakyReLU(alpha=0.2))
     
-    assert model.output_shape == (None, 250, 250, 64)
+    assert model.output_shape == (None, 256, 256, 24)
     
     
     model.add(layers.Conv2D(
-        128, (5, 5), strides=(2, 2), padding='same', use_bias=False, 
+        32, (5, 5), strides=(2, 2), padding='same', use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
     model.add(layers.BatchNormalization(momentum=0.9, epsilon=1e-5))
     model.add(layers.LeakyReLU(alpha=0.2))
     
-    assert model.output_shape == (None, 125, 125, 128)
+    assert model.output_shape == (None, 128, 128, 32)
     
     
     model.add(layers.Conv2D(
-        256, (5, 5), strides=(2, 2), padding='same', use_bias=False, 
+        42, (5, 5), strides=(2, 2), padding='same', use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
     model.add(layers.BatchNormalization(momentum=0.9, epsilon=1e-5))
     model.add(layers.LeakyReLU(alpha=0.2))
     
-    assert model.output_shape == (None, 63, 63, 256)
+    assert model.output_shape == (None, 64, 64, 42)
     
-
+    
     model.add(layers.Flatten())
     model.add(layers.Dense(1))
 
     return model
-
