@@ -1,0 +1,75 @@
+histogram_type : ROI
+split_ratio: 1
+num_imgs_to_load: 27000
+n_estimators:
+  - 7
+  - 14
+  - 70
+  - 130
+ranges:
+      -
+        - 10
+        - 90
+      -
+        - -120
+        - 180
+
+# specify histograms to include
+ROI_options:
+  whole_img:
+    include: True
+    prepr_fft: True
+    num_bins:
+            - 33
+            - 15
+
+  quarter_img:
+    include: False
+    prepr_fft: True
+    num_bins:
+      - 33
+      - 15
+
+  radial:
+    include: True
+    prepr_fft: True
+    shift_fft: True
+    num_bins:
+            #- 30
+            #- 60
+            -
+              - 33
+              - 15
+    radii:
+         # - 245
+         #- - 150
+         #  - 300
+         - -460
+
+  grad:
+    include: False
+    prepr_fft: True
+    num_bins: 13
+    radius: 110
+
+  angle:
+    include: False
+    prepr_fft: True
+    num_bins:
+            -
+              - 33
+              - 15
+
+    angle_l:
+           - 0
+           - 18
+           - 36
+           - 54
+           - 72
+
+    angle_h:
+           - 18
+           - 36
+           - 54
+           - 72
+           - 90

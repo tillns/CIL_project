@@ -534,39 +534,47 @@ def roi_histograms(image, conf):
     if roi_conf['quarter_img']['include']:
         num_rows, num_cols = psd_fft_shift.shape
 
-        if roi_conf['quarter_img']['prepr_fft']:
-            quarter_psd = psd_fft_shift[num_rows // 2 : num_rows, num_cols // 2 : num_cols]
-            quarter = 10 * np.log(quarter_psd + np.power(1.0, -120))
-            quarter_range = range_fft
+        for num_range, range_fft in enumerate(ranges_fft):
+            if roi_conf['quarter_img']['prepr_fft']:
+                quarter_psd = psd_fft_shift[num_rows // 2 : num_rows, num_cols // 2 : num_cols]
+                quarter = 10 * np.log10(quarter_psd + eps)
+                quarter_range = range_fft
 
-        else:
-            quarter = np_image[num_rows // 2 : num_rows, num_cols // 2 : num_cols]
-            quarter_range = range_normal
+            else:
+                quarter = np_image[num_rows // 2 : num_rows, num_cols // 2 : num_cols]
+                quarter_range = range_normal
 
-        image_features_4, _ = np.histogram(quarter[0:250, 250:500][0:125, 0:125],
-                                               bins=roi_conf['quarter_img']['num_bins'], range=quarter_range)
-        image_features_5, _ = np.histogram(quarter[0:250, 250:500][0:125, 125:250],
-                                               bins=roi_conf['quarter_img']['num_bins'], range=quarter_range)
-        image_features_6, _ = np.histogram(quarter[0:250, 250:500][125:250, 0:125],
-                                               bins=roi_conf['quarter_img']['num_bins'], range=quarter_range)
-        image_features_7, _ = np.histogram(quarter[0:250, 250:500][125:250, 125:250],
-                                               bins=roi_conf['quarter_img']['num_bins'], range=quarter_range)
-        hists.extend([image_features_4, image_features_5, image_features_6, image_features_7])
+            image_features_4, _ = np.histogram(quarter[0:250, 250:500][0:125, 0:125],
+                                               bins=roi_conf['quarter_img']['num_bins'][num_range],
+                                               range=quarter_range)
+            image_features_5, _ = np.histogram(quarter[0:250, 250:500][0:125, 125:250],
+                                               bins=roi_conf['quarter_img']['num_bins'][num_range],
+                                               range=quarter_range)
+            image_features_6, _ = np.histogram(quarter[0:250, 250:500][125:250, 0:125],
+                                               bins=roi_conf['quarter_img']['num_bins'][num_range],
+                                               range=quarter_range)
+            image_features_7, _ = np.histogram(quarter[0:250, 250:500][125:250, 125:250],
+                                               bins=roi_conf['quarter_img']['num_bins'][num_range],
+                                               range=quarter_range)
+            hists.extend([image_features_4, image_features_5, image_features_6, image_features_7])
 
     if roi_conf['radial']['include']:
         for num_rad, radius in enumerate(roi_conf['radial']['radii']):
             mask = _create_circular_mask(1000, 1000, [500, 500], radius)
-            if roi_conf['radial']['prepr_fft']:
-                if roi_conf['radial']['shift_fft']:
-                    for num_range, range_fft in enumerate(ranges_fft):
-                        hists.append(_compute_histogram_from_mask(mask, psd_log, roi_conf['radial']['num_bins'][num_rad][num_range],
+            for num_range, range_fft in enumerate(ranges_fft):
+                if roi_conf['radial']['prepr_fft']:
+                    if roi_conf['radial']['shift_fft']:
+                        hists.append(_compute_histogram_from_mask(mask, psd_log,
+                                                                  roi_conf['radial']['num_bins'][num_rad][num_range],
+                                                                  range_fft))
+                    else:
+                        hists.append(_compute_histogram_from_mask(mask, psd_noshifted_log,
+                                                                  roi_conf['radial']['num_bins'][num_rad][num_range],
                                                                   range_fft))
                 else:
-                    hists.append(_compute_histogram_from_mask(mask, psd_noshifted_log,
-                                                              roi_conf['radial']['num_bins'][num_rad], range_fft))
-            else:
-                hists.append(_compute_histogram_from_mask(mask, np_image, roi_conf['radial']['num_bins'][num_rad],
-                                                          range_normal))
+                    hists.append(_compute_histogram_from_mask(mask, np_image,
+                                                              roi_conf['radial']['num_bins'][num_rad][num_range],
+                                                              range_normal))
 
     if roi_conf['grad']['include'] and use_grad:
         # Todo: I think this only uses data without fft, add fft
@@ -575,14 +583,14 @@ def roi_histograms(image, conf):
         gx = cv2.Sobel(grad_img, cv2.CV_32F, 1, 0, ksize=1)
         gy = cv2.Sobel(grad_img, cv2.CV_32F, 0, 1, ksize=1)
         
-        msk = _create_circular_mask(1000, 1000, [500, 500], radius=120)
+        msk = _create_circular_mask(1000, 1000, [500, 500], radius=roi_conf['grad']['radius'])
 
         mag, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
         
         mag_mskd = ma.masked_array(mag, mask=msk)
         angle_mskd = ma.masked_array(angle, mask=msk)
 
-        grad_hist = np.zeros(9).astype(np.float32)
+        grad_hist = np.zeros(roi_conf['grad']['num_bins']).astype(np.float32)
         
         compute_hist.compute_hist_func(mag_mskd[0:500,500:1000].compressed().flatten(), 
                                        angle_mskd[0:500,500:1000].compressed().flatten(), 
@@ -592,10 +600,11 @@ def roi_histograms(image, conf):
 
     if roi_conf['angle']['include']:
         for num_it, num_bins in enumerate(roi_conf['angle']['num_bins']):
-            mask = _create_angle_mask(1000, 1000, roi_conf['angle']['angle_l'][num_it],
-                                      roi_conf['angle']['angle_h'][num_it])
-            hist = _compute_histogram_from_mask(mask, psd_log, num_bins, range_fft) \
-                if roi_conf['angle']['prepr_fft'] else \
-                _compute_histogram_from_mask(mask, np_image, num_bins, range_normal)
-            hists.append(hist)
+            for num_range, range_fft in enumerate(ranges_fft):
+                mask = _create_angle_mask(1000, 1000, roi_conf['angle']['angle_l'][num_it],
+                                          roi_conf['angle']['angle_h'][num_it])
+                hist = _compute_histogram_from_mask(mask, psd_log, num_bins[num_range], range_fft) \
+                    if roi_conf['angle']['prepr_fft'] else \
+                    _compute_histogram_from_mask(mask, np_image, num_bins, range_normal)
+                hists.append(hist)
     return hists

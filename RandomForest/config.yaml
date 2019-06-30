@@ -1,6 +1,6 @@
 histogram_type : ROI
-split_ratio: 0.5
-num_imgs_to_load: 2700
+split_ratio: 1
+num_imgs_to_load: 27000
 n_estimators:
   - 7
   - 14
@@ -26,7 +26,9 @@ ROI_options:
   quarter_img:
     include: False
     prepr_fft: True
-    num_bins: 30
+    num_bins:
+      - 33
+      - 15
 
   radial:
     include: True
@@ -45,18 +47,29 @@ ROI_options:
          - -460
 
   grad:
-    include: True
+    include: False
     prepr_fft: True
-    num_bins: 9
+    num_bins: 13
+    radius: 110
 
   angle:
     include: False
     prepr_fft: True
     num_bins:
-             - 30
+            -
+              - 33
+              - 15
 
     angle_l:
            - 0
+           - 18
+           - 36
+           - 54
+           - 72
 
     angle_h:
-           - 30
+           - 18
+           - 36
+           - 54
+           - 72
+           - 90
