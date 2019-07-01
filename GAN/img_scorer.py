@@ -40,6 +40,8 @@ def load_km_with_conf(ckpt_path):
 
 def score_tensor_with_rf(image_tensor, rf_model, conf):
 
+    if len(image_tensor.shape) == 4:
+        image_tensor = image_tensor[:, :, :, 0]
     hist_list = []
     for i in range(image_tensor.shape[0]):
         hist_list.append(np.concatenate(roi_histograms(image_tensor[i], conf)))
@@ -71,11 +73,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, default=None,
                         help='Whole path to dir with images or path to individual image.')
-    parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/checkpoints/"
-                        "res1000/fft_4convs_8features_MAE/cp-0140.ckpt"),
+    parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/reference_run/"
+                        "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
                         help='Whole path to nn checkpoint file ending with .data-00001....')
-    parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "CIL_project/RandomForest/np_out/whole_"
-                        "radial_all_0.99_29binsbutbest/random_forest_119_0.99.sav"), help='Whole path rf model (.sav)')
+    parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "/home/tillns/CIL_project/RandomForest/"
+                        "final_model/random_forest_96_1.sav"), help='Whole path rf model (.sav)')
     args = parser.parse_args()
 
     if args.path is None:

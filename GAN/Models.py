@@ -124,7 +124,6 @@ class Models():
             x = tf.keras.layers.Dropout(dconf['dropout'])(x)
             x = tf.keras.layers.Flatten()(x)
 
-
             input_c = tf.keras.layers.Input((conf['num_classes'],))
             x_c = tf.keras.layers.Dense(7 * 7 * conf['max_features'], use_bias=dconf['use_bias'])(input_c)
             x_c = tf.keras.layers.BatchNormalization()(x_c)

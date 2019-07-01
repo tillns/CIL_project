@@ -27,10 +27,12 @@ def get_pad(x, total_padding=0, training=True):
                                                         [total_padding//2, total_padding - total_padding//2], [0, 0]])))
     else:
         total_padding = abs(total_padding)
-        rand1 = randint(0, total_padding) if training else total_padding//2
-        rand2 = randint(0, total_padding) if training else total_padding//2
+        rand1 = randint(0, total_padding)
+        rand2 = randint(0, total_padding)
         s = x.shape
-        return x[:, rand1:s[1] - total_padding + rand1, rand2:s[2] - total_padding + rand2]
+        return tf.cond(training, lambda: x[:, rand1:s[1] - total_padding + rand1, rand2:s[2] - total_padding + rand2],
+                       lambda: x[:, total_padding//2:s[1] - total_padding + total_padding//2,
+                                 total_padding//2:s[2] - total_padding + total_padding//2])
 
 
 def getNormLayer(norm_type='batch', momentum=0.9, epsilon=1e-5):

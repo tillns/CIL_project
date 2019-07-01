@@ -12,8 +12,8 @@ batch_size: 200
 lr: 0.0001
 lr_decay: 0.00  # experiment
 gan_loss: lsgan
-nn_val_model_path: res1000/fft_4convs_8features_MAE/cp-0140.ckpt
-rf_val_model_path: np_out/whole_radial_all_0.99_29binsbutbest/random_forest_119_0.99.sav
+nn_val_model_path: reference_run/fft_4convs_8features_MAE/cp-0140.ckpt
+rf_val_model_path: final_model/random_forest_96_1.sav
 num_val_images: 100
 conditional: True
 
@@ -38,6 +38,6 @@ dis:
   use_bias: True  # True in tf DCGAN
 
 gen:
-  transp_conv: True  # True in tf DCGAN
+  transp_conv: False  # True in tf DCGAN
   use_bias: False  # False in tf DCGAN
   input_neurons: 100  # 100 in tf DCGAN

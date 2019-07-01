@@ -27,7 +27,7 @@ min_res = conf['min_res']
 image_channels = 1
 home_dir = os.path.expanduser("~")
 gan_dir = os.path.join(home_dir, "CIL_project/GAN")
-classifier_cp_dir = os.path.join(home_dir, "CIL_project/Classifier/checkpoints")
+classifier_dir = os.path.join(home_dir, "CIL_project/Classifier")
 labeled_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
 label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled.csv")
 star_directory = os.path.join(home_dir, "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats") \
@@ -266,7 +266,7 @@ progbar.on_train_begin()
 if do_validation:
     min_dis_val_loss = 10000
     max_gen_val_score = 0
-    nn_valmodel, nn_valconf = load_km_with_conf(os.path.join(classifier_cp_dir, conf['nn_val_model_path']))
+    nn_valmodel, nn_valconf = load_km_with_conf(os.path.join(classifier_dir, conf['nn_val_model_path']))
     rf_model, rf_conf = load_rf_with_conf(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"),
                                                        conf['rf_val_model_path']))
 
@@ -302,6 +302,7 @@ for epoch in range(num_epochs):
 
     epoch_logs = {'gen': {'gen_loss': gen_losses / num_train_it},
                   'dis': {'dis_loss': dis_losses / num_train_it}}
+    save_new_cp = ((epoch + 1) % conf['period_to_save_cp'] == 0)
     # only test dis on one randomly drawn batch of test data per epoch
     if do_validation and (epoch+1)%conf['period_for_val'] == 0:
         callbacks._call_begin_hook('test')
@@ -327,8 +328,8 @@ for epoch in range(num_epochs):
         callbacks._call_end_hook('test')
         dis_val_loss /= num_test_it
         min_dis_val_loss = min(min_dis_val_loss, dis_val_loss)
-        save_new_cp = max_gen_val_score > gen_val_score
-        max_gen_val_score = min(max_gen_val_score, gen_val_score)
+        save_new_cp = save_new_cp or gen_val_score > max_gen_val_score
+        max_gen_val_score = max(max_gen_val_score, gen_val_score)
         epoch_logs['dis']['dis_val_loss'] = dis_val_loss
         epoch_logs['dis']['min_dis_val_loss'] = min_dis_val_loss
         epoch_logs['gen']['gen_val_score'] = gen_val_score
@@ -337,8 +338,7 @@ for epoch in range(num_epochs):
 
 
     # Save the model every few epochs
-    if ((epoch + 1) % conf['period_to_save_cp'] == 0) or (do_validation and save_new_cp ):
-
+    if save_new_cp:
         try:
             checkpoint_path = os.path.join(checkpoint_dir, "cp_{}_epoch{}".format("{}", epoch + 1))
             generator.save_weights(checkpoint_path.format("gen"))

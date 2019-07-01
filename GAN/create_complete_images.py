@@ -21,11 +21,13 @@ num_stars_per_cat_per_num_cats = {1: {0: (6.390691114245416, 2.527025670888084)}
                                       3: (1.2030277385989656, 1.3678544263436558),
                                       4: (0.3940479548660083, 0.9661977591756937)}}
 
+
 def overlap(x, y, stars_pos_list, dist_stars):
     for (xi, yi) in stars_pos_list:
         if xi <= x < xi+dist_stars and yi <= y < yi+dist_stars:
             return True
     return False
+
 
 def round_pos_int(some_decimal):
     if some_decimal < 0:
@@ -34,24 +36,29 @@ def round_pos_int(some_decimal):
         return int(some_decimal)
     return int(some_decimal) + 1
 
+
 def get_classes_dict(num_classes, kind='int'):
     dict_to_return = {}
     for i in range(num_classes):
         dict_to_return[i] = 0 if kind == 'int' else []
     return dict_to_return
 
+
 def one_hot(batch_y, num_classes):
     y_ = np.zeros((batch_y.shape[0], num_classes))
     y_[np.arange(batch_y.shape[0]), batch_y] = 1
     return y_
 
+
 def save_obj(obj, name ):
     with open(name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
+
 def load_obj(name ):
     with open(name + '.pkl', 'rb') as f:
         return pickle.load(f)
+
 
 def create_complete_images(gen_model, vmin=0, num_images_to_create=100, num_classes=1, load_dict=True):
 
@@ -123,16 +130,17 @@ if __name__ == '__main__':
     parser.add_argument('-C', '--checkpoint_path', type=str, default=os.path.join(home_dir,
                         "CIL_project/GAN/checkpoints/20190620-211644/cp_gen_epoch400.data-00000-of-00001"),
                         help='Whole path to checkpoint file ending with data-00000-of-00001')
-    parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/checkpoints/"
-                        "res1000/fft_4convs_8features_MAE/cp-0140.ckpt"),
+    parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/reference_run/"
+                        "fft_4convs_8features_MAE/cp-0140.ckpt"),
                         help='Whole path to classfier nn checkpoint file ending with .data-00001....')
-    parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "CIL_project/RandomForest/np_out/whole_"
-                        "radial_all_0.99_29binsbutbest/random_forest_119_0.99.sav"), help='Whole path rf model (.sav)')
+    parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "CIL_project/RandomForest/final_model/"
+                        "random_forest_96_1.sav"), help='Whole path rf model (.sav)')
     parser.add_argument('-f', '--find_best_num_stars_per_image', type=bool, default=False)
     args = parser.parse_args()
 
     if args.checkpoint_path is None:
-        args.checkpoint_path = input("Please provide the full path to the checkpoint file ending with data-00000-of-00001")
+        args.checkpoint_path = input("Please provide the full path to the checkpoint file ending "
+                                     "with data-00000-of-00001")
     experiment_dir = os.path.dirname(args.checkpoint_path)
     with open(os.path.join(experiment_dir, "config.yaml"), 'r') as stream:
         conf = yaml.full_load(stream)
