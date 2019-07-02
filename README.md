@@ -12,7 +12,7 @@ Group: Galaxy Crusaders
 - joblib
 - pyyaml
 - numpy
-- PIL
+- Pillow
 - cv2
 - pywt
 - cython
@@ -34,6 +34,13 @@ places them randomly onto a black image. Open the notebook by heading into the `
 subdirectory, running `jupyter notebook` and opening `Adhoc.ipynb`.
 
 ### DCGAN
+
+**Sources**
+
+https://www.tensorflow.org/alpha/tutorials/generative/dcgan (TensorFlow DCGAN tutorial, code is based on this)  
+https://arxiv.org/abs/1511.06434 (DCGAN paper, contains values for most hyperparameters)  
+https://github.com/Newmu/dcgan_code/blob/master/imagenet/load_pretrained.py (code from the authors of the DCGAN paper)  
+https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced public TensorFlow implementation)  
 
 ### GAN
 
@@ -65,7 +72,7 @@ Prediction:
     python classifier.py --test_on_query=True --restore_ckpt=True --ckpt_path=/path/to/checkpoint/cp####.ckpt.data-00000-of-00001
 
 Where `/path/to/checkpoint/cp####.ckpt.data-00000-of-00001`
-is a valid path to the checkpoint and `####` is replaced with the checkpoint number. 
+is a valid path to the checkpoint and `####` is replaced with the checkpoint number.
 
 ### RandomForest
 

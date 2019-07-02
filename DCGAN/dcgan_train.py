@@ -2,9 +2,7 @@
 
 This file contains functions to train the DCGAN. The code is based on the DCGAN tutorial on the TensorFlow website (see
 https://www.tensorflow.org/alpha/tutorials/generative/dcgan).
-
 """
-
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -23,8 +21,8 @@ from argparse import ArgumentParser
 
 # File paths
 
+# TODO: Remove hard coded paths and add help and required flags
 parser_dcgan = ArgumentParser()
-
 parser_dcgan.add_argument("--path_csv_labeled", default="/cluster/home/hannepfa/cosmology_aux_data/labeled.csv", type=str)
 parser_dcgan.add_argument("--dir_labeled_images", default="/cluster/home/hannepfa/cosmology_aux_data/labeled", type=str)
 parser_dcgan.add_argument("--path_csv_scored", default="/cluster/home/hannepfa/cosmology_aux_data/scored.csv", type=str)
@@ -46,7 +44,6 @@ parser_dcgan.add_argument("--frac_train", default=0.9, type=float)
 
 
 # Hyperparameters
-
 _generator_optimizer = tf.keras.optimizers.Adam(lr=2e-4, beta_1=0.5)
 _discriminator_optimizer = tf.keras.optimizers.Adam(lr=2e-4, beta_1=0.5)
 
@@ -57,15 +54,12 @@ _latent_dim = 34 # NOTE: avoid OOM
 
 
 # Metrics
-
 _gen_loss_mean = tf.keras.metrics.Mean('gen_loss_mean', dtype=tf.float32)
 _disc_loss_mean = tf.keras.metrics.Mean('disc_loss_mean', dtype=tf.float32)
 
 
 def _compute_generator_loss(fake_output):
-
     """Computes the loss of the generator model
-
 
     Parameters
     ----------
@@ -77,7 +71,6 @@ def _compute_generator_loss(fake_output):
     -------
     gen_loss : tf.Tensor
         The computed loss
-
     """
 
     cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
@@ -88,9 +81,7 @@ def _compute_generator_loss(fake_output):
 
 
 def _compute_discriminator_loss(real_output, fake_output):
-
     """Computes the loss of the discriminator model
-
 
     Parameters
     ----------
@@ -104,7 +95,6 @@ def _compute_discriminator_loss(real_output, fake_output):
     -------
     disc_loss : tf.Tensor
         The computed loss
-
     """
 
     cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
@@ -119,7 +109,6 @@ def _compute_discriminator_loss(real_output, fake_output):
 
 @tf.function
 def train_step(batch_images, generator, discriminator):
-
     """Trains the generator model and the discriminator model of the DCGAN on a batch of images
 
 
@@ -131,8 +120,6 @@ def train_step(batch_images, generator, discriminator):
         The generator model
     discriminator : tf.keras.Sequential
         The discriminator model
-
-
     """
 
     noise = tf.random.normal([_batch_size, _latent_dim]) # dim(z) = _latent_dim
@@ -157,7 +144,6 @@ def train_step(batch_images, generator, discriminator):
 
 
 def train_dcgan(arguments, generator, discriminator):
-
     """Trains the DCGAN on a all labeled images and on all scored images with score >= 2.61
 
 
@@ -169,8 +155,6 @@ def train_dcgan(arguments, generator, discriminator):
         The generator model
     discriminator : tf.keras.Sequential
         The discriminator model
-
-
     """
 
     train_dataset, test_dataset = load_train_test_dataset(arguments, _batch_size)
@@ -232,7 +216,7 @@ if __name__ == "__main__":
 
     gen_loss_test, disc_loss_test = train_dcgan(arguments, generator, discriminator)
 
-
+    # TODO absolute paths
     with open("/cluster/home/hannepfa/CIL_project/DCGAN/gen_loss_test.csv", "w") as f:
         for item in gen_loss_test:
             f.write("{}\n".format(item))

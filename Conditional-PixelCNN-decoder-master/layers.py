@@ -5,9 +5,7 @@ def get_weights(shape, name, horizontal, mask_mode='noblind', mask=None):
     weights_initializer = tf.contrib.layers.xavier_initializer()
     W = tf.get_variable(name, shape, tf.float32, weights_initializer)
 
-    '''
-        Use of masking to hide subsequent pixel values 
-    '''
+    # Use of masking to hide subsequent pixel values 
     if mask:
         filter_mid_y = shape[0]//2
         filter_mid_x = shape[1]//2
@@ -37,8 +35,8 @@ def get_weights(shape, name, horizontal, mask_mode='noblind', mask=None):
 
             if mask == 'a':
                 mask_filter[filter_mid_y, filter_mid_x, :, :] = 0.
-                
-        W *= mask_filter 
+
+        W *= mask_filter
     return W
 
 def get_bias(shape, name):
@@ -54,7 +52,7 @@ class GatedCNN():
     def __init__(self, W_shape, fan_in, horizontal, gated=True, payload=None, mask=None, activation=True, conditional=None, conditional_image=None):
         self.fan_in = fan_in
         in_dim = self.fan_in.get_shape()[-1]
-        self.W_shape = [W_shape[0], W_shape[1], in_dim, W_shape[2]]  
+        self.W_shape = [W_shape[0], W_shape[1], in_dim, W_shape[2]]
         self.b_shape = W_shape[2]
 
         self.in_dim = in_dim
@@ -64,7 +62,7 @@ class GatedCNN():
         self.conditional = conditional
         self.conditional_image = conditional_image
         self.horizontal = horizontal
-        
+
         if gated:
             self.gated_conv()
         else:
@@ -96,7 +94,7 @@ class GatedCNN():
 
         conv_f = conv_op(self.fan_in, W_f)
         conv_g = conv_op(self.fan_in, W_g)
-       
+
         if self.payload is not None:
             conv_f += self.payload
             conv_g += self.payload
@@ -107,12 +105,10 @@ class GatedCNN():
         W = get_weights(self.W_shape, "W", self.horizontal, mask_mode="standard", mask=self.mask)
         b = get_bias(self.b_shape, "b")
         conv = conv_op(self.fan_in, W)
-        if self.activation: 
+        if self.activation:
             self.fan_out = tf.nn.relu(tf.add(conv, b))
         else:
             self.fan_out = tf.add(conv, b)
 
     def output(self):
-        return self.fan_out 
-
-
+        return self.fan_out
