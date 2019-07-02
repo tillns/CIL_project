@@ -43,7 +43,6 @@ def make_generator_model():
     
     assert model.output_shape == (None, 64, 64, 42) # NOTE: None is the batch size
     
-    
     model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
 
     model.add(layers.Conv2D(
@@ -53,7 +52,6 @@ def make_generator_model():
     model.add(layers.ReLU())
     
     assert model.output_shape == (None, 128, 128, 32)
-    
     
     model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
     
@@ -65,7 +63,6 @@ def make_generator_model():
     
     assert model.output_shape == (None, 256, 256, 24)
     
-    
     model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
     
     model.add(layers.Conv2D(
@@ -75,7 +72,6 @@ def make_generator_model():
     model.add(layers.ReLU())
     
     assert model.output_shape == (None, 512, 512, 16)
-    
     
     model.add(layers.UpSampling2D(size=(2, 2), interpolation='nearest'))
     
@@ -127,7 +123,6 @@ def make_discriminator_model():
     
     assert model.output_shape == (None, 128, 128, 32)
     
-    
     model.add(layers.Conv2D(
         42, (5, 5), strides=(2, 2), padding='same', use_bias=False, 
         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.0002, seed=None)))
@@ -136,7 +131,8 @@ def make_discriminator_model():
     
     assert model.output_shape == (None, 64, 64, 42)
     
-    
+    # dense 5
+
     model.add(layers.Flatten())
     model.add(layers.Dense(1))
 

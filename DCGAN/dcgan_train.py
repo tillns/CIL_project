@@ -33,7 +33,7 @@ parser_dcgan.add_argument("--dir_scored_images", default="/cluster/home/hannepfa
 parser_dcgan.add_argument("--path_ckpt", 
                         default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt/checkpoint", type=str)
 parser_dcgan.add_argument("--path_ckpt_stable", 
-                        default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt_stable", type=str)
+                        default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt_stable/checkpoint", type=str)
 
 parser_dcgan.add_argument("--output_dir_generated_images", 
                         default="/cluster/home/hannepfa/CIL_project/DCGAN/generated", type=str)
@@ -50,10 +50,10 @@ parser_dcgan.add_argument("--frac_train", default=0.9, type=float)
 _generator_optimizer = tf.keras.optimizers.Adam(lr=2e-4, beta_1=0.5)
 _discriminator_optimizer = tf.keras.optimizers.Adam(lr=2e-4, beta_1=0.5)
 
-_epochs = 80
-_batch_size = 24
+_epochs = 120
+_batch_size = 24 # NOTE: avoid OOM
 
-_latent_dim = 100
+_latent_dim = 34 # NOTE: avoid OOM
 
 
 # Metrics
@@ -213,7 +213,7 @@ def train_dcgan(arguments, generator, discriminator):
         _disc_loss_mean.reset_states()
             
         
-        if epoch % 5 == 0:
+        if epoch >= 80 and epoch % 5 == 0:
             
             checkpoint.save(file_prefix=arguments.path_ckpt)
             
