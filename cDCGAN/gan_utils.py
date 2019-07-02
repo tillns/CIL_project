@@ -1,3 +1,11 @@
+"""
+This module provides useful methods for the cDCGAN. It implements the following methods:
+    #transform_norm
+    #detransform_norm
+    #load_dataset
+    #one_hot
+    #generate_and_save_images
+"""
 import cv2
 import os
 import numpy as np
@@ -5,14 +13,31 @@ from PIL import Image
 
 
 def transform_norm(numpy_image_array, conf):
+    """
+    :param numpy_image_array: numpy image array ranging from 0 to 255
+    :param conf: cDCGAN configuration
+    :return: copy of the numpy image array, linearly transformed to range from conf['vmin'] to conf['vmax']
+    """
     return numpy_image_array / 255.0 * (conf['vmax']-conf['vmin']) + conf['vmin']
 
 
 def detransform_norm(numpy_image_array, conf):
+    """
+    :param numpy_image_array: numpy image array ranging from conf['vmin'] to conf['vmax']
+    :param conf: cDCGAN configuration
+    :return: copy of the numpy image array, linearly transformed to range from 0 to 255
+    """
     return (numpy_image_array - conf['vmin']) / (conf['vmax']-conf['vmin']) * 255.0
 
 
 def load_dataset(conf, image_directory, image_size):
+    """
+    :param conf: cDCGAN configuration
+    :param image_directory: directory which directly contains the images for the unconditional setting, and the folders
+                            for each class, each containing its corresponding images for the conditional setting.
+    :param image_size: Size of the images to load
+    :return: training images, validation images, training labels, and validation labels
+    """
     images = []
     if not conf['conditional']:
         for filename in os.listdir(image_directory):
@@ -58,15 +83,25 @@ def load_dataset(conf, image_directory, image_size):
 
 #  taken from PixelCNN code
 def one_hot(batch_y, num_classes):
+    """
+    :param batch_y: batch-sized vector containing class label for each image
+    :param num_classes: total number of classes
+    :return: batch_sized matrix, for each image a vector with value 1 at the class label entry and 0 otherwise
+    """
     y_ = np.zeros((batch_y.shape[0], num_classes))
     y_[np.arange(batch_y.shape[0]), batch_y] = 1
     return y_
 
 
 def generate_and_save_images(model, epoch, test_input, conf, save_image_path):
-    # Notice `training` is set to False.
-    # This is so all layers run in inference mode (batchnorm).
-
+    """
+    Generates a bunch of images from a given latent input with the generative model.
+    :param model: keras model
+    :param epoch: number of current epoch (used for saving)
+    :param test_input: latent input (should preferably be kept constant throughout training for comparison purposes)
+    :param conf: model configuration
+    :param save_image_path: path to folder in which to save generated images.
+    """
     tot = test_input.shape[0]
     per_row = int(np.sqrt(tot)) if not conf['conditional'] else conf['num_classes']
     if conf['conditional']:

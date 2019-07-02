@@ -6,14 +6,18 @@ sys.path.insert(0, os.path.join(home_dir, "CIL_project/Classifier"))
 from CustomLayers import Padder, getNormLayer, get_custom_objects
 
 
-
 class Models():
+    """
+    Implements four different kinds of model sets containing a generator and discriminator. Not every model kind uses
+    all the configurations. The kinds are numbered 1, 2, 3 and 4. Number 4 is for a conditional setting, while 1 through
+    3 are unconditional. Call get_discriminator_model() to get the specified kind of keras sequential discriminator
+    model, and get_generator_model for the corresponding generator model.
+    """
     def __init__(self, conf):
         self.conf = conf
         self.model_kind = conf['model_kind']
         self.dis_features = []
         self.kernel = (conf['kernel'], conf['kernel'])
-
 
     def get_discriminator_model(self):
         conf = self.conf
