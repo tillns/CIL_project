@@ -133,6 +133,8 @@ if __name__ == '__main__':
     tot_num_epochs = conf['tot_num_epochs']
     label_range = 8  # labels go from 0 to 8
     save_np_to_mem = image_size > 250 and not args.is_cluster
+    if save_np_to_mem and not os.path.exists(os.path.join(classifier_dir, "numpy_data")):
+        os.makedirs(os.path.join(classifier_dir, "numpy_data"))
     checkpoint_dir = os.path.join(classifier_dir, "checkpoints/res{}".format(image_size))
 
     """

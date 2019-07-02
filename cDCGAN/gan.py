@@ -13,6 +13,7 @@ import tensorflow as tf
 import numpy as np
 import os
 import yaml
+import argparse
 from datetime import datetime
 from tensorflow.python.keras.engine import training_utils
 from Models import Models, get_custom_objects
@@ -86,21 +87,21 @@ def train_step(images, labels, generator, discriminator, iteration, progbar, con
     return gen_loss, dis_loss
 
 
-def train_gan():
+def train_gan(args):
     with open("config.yaml", 'r') as stream:
         conf = yaml.full_load(stream)
     image_size = conf['image_size']
-    home_dir = os.path.expanduser("~")
-    gan_dir = os.path.join(home_dir, "CIL_project/cDCGAN")
-    classifier_dir = os.path.join(home_dir, "CIL_project/Classifier")
-    labeled_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled")
-    star_directory = os.path.join(home_dir, "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_"
-                                            "scoredover3_5cats") if conf['conditional'] else \
-        os.path.join(home_dir, "CIL_project/extracted_stars_Hannes")
-    if image_size == 28:
-        image_directory = star_directory
+    cil_dir = os.path.dirname(os.path.dirname(__file__))
+    gan_dir = os.path.join(cil_dir, "cDCGAN")
+    classifier_dir = os.path.join(cil_dir, "Classifier")
+    if args.dataset_dir is None:
+        if conf['conditional']:
+            image_directory = os.path.join(cil_dir, "AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats")
+        else:
+            image_directory = os.path.join(cil_dir, "extracted_stars/labeled1_and_scoredover3")
     else:
-        image_directory = labeled_directory
+        image_directory = args.dataset_dir
+
 
     do_validation = conf['percentage_train'] < 1
     models = ["dis", "gen"]
@@ -158,7 +159,7 @@ def train_gan():
         min_dis_val_loss = 10000
         max_gen_val_score = 0
         nn_valmodel, nn_valconf = load_km_with_conf(os.path.join(classifier_dir, conf['nn_val_model_path']))
-        rf_model, rf_conf = load_rf_with_conf(os.path.join(os.path.join(home_dir, "CIL_project/RandomForest"),
+        rf_model, rf_conf = load_rf_with_conf(os.path.join(os.path.join(cil_dir, "RandomForest"),
                                                            conf['rf_val_model_path']))
 
     json_config = generator.to_json()
@@ -241,4 +242,7 @@ def train_gan():
 
 
 if __name__ == '__main__':
-    train_gan()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to directory containing images or "
+                                                                      "image class folders with corresponding images")
+    train_gan(parser.parse_args())
