@@ -20,6 +20,7 @@ Group: Galaxy Crusaders
 
 - All open points in the code are marked with a `TODO` comment.
 - Documentation is not always consistent (at times `Paramters`, other times `params:`). However this is consistent if you only look into at single files so this doens't have to be done.
+- Some methods lack documentation. However they are mostly short so this isn't really urgent.
 - I am not sure but I am under the impression that some things are not needed any more. The person who created it should be able to decide this but don't be afraid to delete things! (after all that's why we use git)
 
 ## Requirements
