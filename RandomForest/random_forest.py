@@ -19,7 +19,7 @@ import numpy as np
 
 parser = ArgumentParser()
 parser.add_argument("--data-directory", required=True, help="Required. The directory where the dataset is stored.")
-parser.add_argument("--dump-directory", required=True, help="Required. The directory where all data should be stored. This directory doesn't have to exists yet.")
+parser.add_argument("--dump-directory", required=True, help="Required. The directory where all data should be stored. This directory will be created if it doesn't exist yet.")
 
 def _find_num_features(conf, arguments):
     """Calculates the number of features for the current configuration
