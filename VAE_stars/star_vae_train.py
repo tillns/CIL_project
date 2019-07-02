@@ -1,7 +1,6 @@
 """Variational Autoencoder Train
 
 This file contains functions to train the variational autoencoder model.
-
 """
 
 
@@ -10,7 +9,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from star_vae import StarVAE
 from star_vae_utils import load_train_test_dataset
 
-# !pip install -q tensorflow-gpu==2.0.0-alpha0
 import tensorflow as tf
 
 from argparse import ArgumentParser
@@ -19,7 +17,7 @@ from argparse import ArgumentParser
 # File paths
 
 parser_vae = ArgumentParser()
-
+# TODO remove hard coded paths and add help and required flag
 parser_vae.add_argument("--path_csv", default="/cluster/home/hannepfa/cosmology_aux_data/labeled.csv", type=str)
 parser_vae.add_argument("--dir_labeled_images", default="/cluster/home/hannepfa/cosmology_aux_data/labeled/", type=str)
 parser_vae.add_argument("--path_ckpt_generative",
