@@ -16,6 +16,10 @@ from random_forest_utils import roi_histograms
 
 
 def load_rf_with_conf(rf_path):
+    """
+    :param rf_path: Path to Random Forest classifier model ending with ".sav"
+    :return: the loaded Random Forest classifier model and its configuration
+    """
     rf_model = joblib.load(rf_path)
     with open(os.path.join(os.path.dirname(rf_path), "config.yaml"), 'r') as stream:
         conf = yaml.full_load(stream)
@@ -23,10 +27,17 @@ def load_rf_with_conf(rf_path):
     return rf_model, conf
 
 
-def load_km_with_conf(ckpt_path):
+def load_km_with_conf(ckpt_path, model_name="model_config.json"):
+    """
+    :param ckpt_path: The path to the specific keras checkpoint to load (ending with ".data-00000-of-00001"). The model
+                      and config file are assumed to be in the same directory under the names model_name and
+                      "config.yaml"
+    :param model_name: name of model file in the same directory
+    :return: keras model and its configuration
+    """
     if ckpt_path.endswith('.data-00000-of-00001'):
         ckpt_path = ckpt_path[:-len('.data-00000-of-00001')]
-    model_path = os.path.join("/".join(ckpt_path.split("/")[:-1]), "model_config.json")
+    model_path = os.path.join("/".join(ckpt_path.split("/")[:-1]), model_name)
     # todo: remove
     sys.path.insert(2, os.path.join(os.path.dirname(ckpt_path), "code"))
 
@@ -41,8 +52,14 @@ def load_km_with_conf(ckpt_path):
     return model, conf
 
 
+# todo: check score_tensor shape
 def score_tensor_with_rf(image_tensor, rf_model, conf):
-
+    """
+    :param image_tensor: tensor of shape [num_images, image_size, image_size] and an optional depth component
+    :param rf_model: loaded Random Forest model (use load_rf_with_conf() to get it from path)
+    :param conf: loaded configuration of rf_model (use load_rf_with_conf() to get it from rf_model path)
+    :return: tensor of shape [num_images, 1] containing a predicted score for each image in image_tensor
+    """
     if len(image_tensor.shape) == 4:
         image_tensor = image_tensor[:, :, :, 0]
     hist_list = []
@@ -54,6 +71,13 @@ def score_tensor_with_rf(image_tensor, rf_model, conf):
 
 
 def score_tensor_with_keras_model(image_tensor, model, batch_size):
+    """
+    :param image_tensor: tensor of shape [num_images, image_size, image_size, depth]. image_size and depth must have the
+                         appropriate values for the model
+    :param model: keras model (use load_km_with_conf() to load it from path)
+    :param batch_size: appropriate batch size for GPU memory
+    :return: tensor of shape [num_images, 1] containing a predicted score for each image in image_tensor
+    """
     score_list = []
     for it in range(math.ceil(image_tensor.shape[0]/batch_size)):
         x_ = image_tensor[it*batch_size:min((it+1)*batch_size, image_tensor.shape[0])]

@@ -186,8 +186,8 @@ def train_gan():
             callbacks.call_begin_hook('test')
             dis_val_loss = 0
             if image_size == 28:
-                np_img_tensor = detransform_norm(create_complete_images(generator, conf['vmin'], conf['num_val_images'],
-                                                                        conf['num_classes']), conf)
+                np_img_tensor, _, _ = create_complete_images(generator, conf['vmin'], conf['num_val_images'], conf['num_classes'])
+                np_img_tensor = detransform_norm(np_img_tensor, conf)
                 rf_score = score_tensor_with_rf(np_img_tensor, rf_model, rf_conf)
                 nn_score = score_tensor_with_keras_model(km_transform(np_img_tensor, nn_valconf['use_fft']),
                                                          nn_valmodel, nn_valconf['batch_size'])

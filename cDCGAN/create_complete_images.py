@@ -215,7 +215,7 @@ def main(args):
         args.checkpoint_path = input("Please provide the full path to the checkpoint file ending "
                                      "with data-00000-of-00001")
 
-    gen_model, conf = load_km_with_conf(args.checkpoint_path)
+    gen_model, conf = load_km_with_conf(args.checkpoint_path, model_name="gen_config.json")
     num_classes = 1 if not conf['conditional'] else gen_model.input[1].shape[1]
     km_model, km_conf = load_km_with_conf(args.nn_path)
     rf_model, rf_conf = load_rf_with_conf(args.rf_path)
