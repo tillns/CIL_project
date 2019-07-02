@@ -1,10 +1,9 @@
-"""
+"""Autoencoder
+
 This is a simple deep convolutional autoencoder that serves the purpose to find a meaningful representation of the star
 patches. This representation is then used in the kmeans.py file to cluster the images. For that, the saved encoder model
 can be found in the latest folder in checkpoints. The autoencoder probably overfits a lot without augmentation, but this
 is not bad since only a distinguishable representation of the given data is required without any need for generality.
-
-Input is --image_dir the directory containing the 28x28 images without any labels.
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -18,8 +17,25 @@ from datetime import datetime
 import yaml
 import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-D', '--image_dir', type=str, required=True, help="The directory containing the 28x28 images without any labels")
 
 def load_dataset(image_directory, image_size, image_channels):
+    """Dummy Title
+
+    TODO: This is a description of this method/module. Description is optional.
+
+    Parameters
+    ----------
+    foo : int
+    	foo does whatever
+
+    Returns
+    -------
+    bar : str
+    	bar is also whatever
+    """
+
     images = []
     for img_name in sorted(os.listdir(image_directory)):
         img = Image.open(os.path.join(image_directory, img_name)).resize((image_size, image_size))
@@ -29,11 +45,8 @@ def load_dataset(image_directory, image_size, image_channels):
 
 
 if __name__ == '__main__':
-    home_dir = os.path.expanduser("~")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-D', '--image_dir', type=str, default=os.path.join(home_dir,
-                        "CIL_project/extracted_stars/labeled1_and_scoredover3"))
     args = parser.parse_args()
+    home_dir = os.path.expanduser("~")
     with open("config.yaml", 'r') as stream:
         conf = yaml.full_load(stream)
 
@@ -85,8 +98,7 @@ if __name__ == '__main__':
         loss='binary_crossentropy',
         optimizer=optimizer
     )
-    # only necessary when neither batch norm nor dropout is used.
-    # See https://stackoverflow.com/questions/52107555/different-loss-function-for-validation-set-in-keras
+
     autoencoder.outputs[0]._uses_learning_phase = True
     autoencoder.summary()
 
@@ -110,6 +122,3 @@ if __name__ == '__main__':
     json_config = encoder.to_json()
     with open(os.path.join(cp_dir_time, 'encoder_config.json'), 'w') as json_file:
         json_file.write(json_config)
-    
-
-
