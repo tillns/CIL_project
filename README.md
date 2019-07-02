@@ -21,19 +21,19 @@ to compile the cython files there.
 
 ## Image generation task
 
-###/AE_plus_KMeans
-###/Adhoc_generator
-###/Conditional-PixelCNN-decoder-master
-###/DCGAN
-###/GAN
-###/VAE_stars
-###/stars_extractor
+### AE_plus_KMeans
+### Adhoc_generator
+### Conditional-PixelCNN-decoder-master
+### DCGAN
+### GAN
+### VAE_stars
+### stars_extractor
 
 ## Similarity scorer task
 
-###/Classifier
+### Classifier
 
-###/RandomForest
+### RandomForest
 
 This model takes two command line arguments which are required:
 
