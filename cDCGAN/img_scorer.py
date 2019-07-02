@@ -27,10 +27,10 @@ import math
 import sys
 home_dir = os.path.expanduser("~")
 sys.path.insert(0, os.path.join(home_dir, "CIL_project/Classifier"))
-sys.path.insert(1, os.path.join(home_dir, "CIL_project/RandomForest"))
+sys.path.insert(1, os.path.join(home_dir, "CIL_project/utils"))
 from CustomLayers import get_custom_objects
 from utils import transform as km_transform
-from random_forest_utils import roi_histograms
+from roi_utils import roi_histograms
 
 
 def load_rf_with_conf(rf_path):

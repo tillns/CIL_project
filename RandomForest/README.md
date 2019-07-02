@@ -22,3 +22,8 @@ Where ```path/to/cosmology_aux_data_170429``` is a valid path to the data folder
 - cv2
 - pywt
 - cython
+
+# run this in this directory:
+#
+# pip install Cython
+# python setup.py build_ext -i
