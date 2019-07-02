@@ -7,6 +7,7 @@ Optional arguments are:
 --nn_path Complete path to a keras model checkpoint (ending with ".data-00000-of-00001")
 --rf_path Complete path to a Random Forest model (ending with ".sav")
 If not specified, default models are chosen.
+
 Following methods are implemented and may be used in other modules:
     #load_rf_with_conf
     #load_km_with_conf
