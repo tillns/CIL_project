@@ -40,6 +40,7 @@ def load_dataset(conf, image_directory, image_size):
     """
     images = []
     if not conf['conditional']:
+        conf['num_classes'] = 1
         for filename in os.listdir(image_directory):
             if filename.endswith(".png") and not filename.startswith("._"):
                 img = Image.open(os.path.join(image_directory, filename)).resize((image_size, image_size))

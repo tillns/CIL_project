@@ -27,6 +27,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # disables some annoying tensorflow wa
 
 
 def discriminator_loss(real_logits, fake_logits, conf):
+    """
+    :param real_logits: output of discriminator given a real input
+    :param fake_logits: output of discriminator given a fake generated input
+    :param conf: GAN configuration
+    :return: discriminator loss where the loss kind is chosen from the configuration
+    """
     label_zero = tf.zeros([real_logits.shape[0], 1])
     label_one = tf.ones([real_logits.shape[0], 1])
 
@@ -43,6 +49,11 @@ def discriminator_loss(real_logits, fake_logits, conf):
 
 
 def generator_loss(fake_logits, conf):
+    """
+    :param fake_logits: discriminator output given a fake generated input
+    :param conf: GAN configuration
+    :return: generator loss where the loss kind is chosen from the configuration
+    """
     label_one = tf.ones([fake_logits.shape[0], 1])
     if conf['gan_loss'] == 'lsgan':
         return tf.reduce_mean(tf.square(fake_logits - label_one))
@@ -52,6 +63,21 @@ def generator_loss(fake_logits, conf):
 
 def train_step(images, labels, generator, discriminator, iteration, progbar, conf, callbacks, generator_optimizer,
                discriminator_optimizer):
+    """
+    Performs one training step, which consists of conf['ratio_gen_dis'] number of generator iterations and one
+    discriminator iteration
+    :param images: tensor of input input images ([b x image_size x image_size x 1])
+    :param labels: tensor including one vector for each image if conditional else None
+    :param generator: model
+    :param discriminator: model
+    :param iteration: the current iteration step
+    :param progbar: progress bar object
+    :param conf: GAN configuration
+    :param callbacks: CustomCallback object in which generator and discriminator model are saved
+    :param generator_optimizer:
+    :param discriminator_optimizer:
+    :return: generator and discriminator loss
+    """
     current_batch_size = images.shape[0]
     batch_logs = callbacks.duplicate_logs_for_models({'batch': iteration, 'size': current_batch_size})
     # print("Batch logs: {}".format(batch_logs))
@@ -88,6 +114,13 @@ def train_step(images, labels, generator, discriminator, iteration, progbar, con
 
 
 def train_gan(args):
+    """
+    Main method that controls the whole training procedure. Validation uses RF and NN classifier models (only for
+    patches). There are a total of conf['num_epochs'] number of epochs. Validation is performed every
+    conf['period_for_val']. A checkpoint is saved every conf['period_to_save_cp'] and when a new max_gen_val_score has
+    been achieved. A summary for tensorboard is kept in the summary folder inside the checkpoint directory.
+    :param args: arguments passed to module
+    """
     with open("config.yaml", 'r') as stream:
         conf = yaml.full_load(stream)
     image_size = conf['image_size']
@@ -101,7 +134,6 @@ def train_gan(args):
             image_directory = os.path.join(cil_dir, "extracted_stars/labeled1_and_scoredover3")
     else:
         image_directory = args.dataset_dir
-
 
     do_validation = conf['percentage_train'] < 1
     models = ["dis", "gen"]
@@ -198,7 +230,8 @@ def train_gan(args):
             callbacks.call_begin_hook('test')
             dis_val_loss = 0
             if image_size == 28:
-                np_img_tensor, _, _ = create_complete_images(generator, conf['vmin'], conf['num_val_images'], conf['num_classes'])
+                np_img_tensor, _, _ = create_complete_images(generator, conf['vmin'], conf['num_val_images'],
+                                                             conf['num_classes'])
                 np_img_tensor = detransform_norm(np_img_tensor, conf)
                 rf_score = score_tensor_with_rf(np_img_tensor, rf_model, rf_conf)
                 nn_score = score_tensor_with_keras_model(km_transform(np_img_tensor, nn_valconf['use_fft']),

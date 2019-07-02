@@ -9,8 +9,9 @@ from CustomLayers import Padder, getNormLayer, get_custom_objects
 class Models():
     """
     Implements four different kinds of model sets containing a generator and discriminator. Not every model kind uses
-    all the configurations. The kinds are numbered 1, 2, 3 and 4. Number 4 is for a conditional setting, while 1 through
-    3 are unconditional. Call get_discriminator_model() to get the specified kind of keras sequential discriminator
+    all the configurations. The kinds are numbered 1, 2, 3 and 4. Number 4 is for the conditional setting on the 28x28
+    patches, 3 for unconditional 28x28 patches, and 1 and 2 were made for the big images (also unconditional).
+    Call get_discriminator_model() to get the specified kind of keras sequential discriminator
     model, and get_generator_model for the corresponding generator model.
     """
     def __init__(self, conf):
