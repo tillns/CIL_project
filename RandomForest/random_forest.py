@@ -125,7 +125,7 @@ def _model_file_path(dump_directory, num_features, split_ratio):
 
     """
 
-    file_name = "random_forest_{}_{}.sav".format(num_features, split_ratio)
+    file_name = "random_forest_{}_{}.pkl".format(num_features, split_ratio)
     return os.path.join(dump_directory, file_name)
 
 def _query_result_path(dump_directory, num_features, split_ratio):

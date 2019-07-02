@@ -5,7 +5,7 @@ The necessary argument is:
 --path The complete path to either a loadable image or a directory containing loadable images
 Optional arguments are:
 --nn_path Complete path to a keras model checkpoint (ending with ".data-00000-of-00001")
---rf_path Complete path to a Random Forest model (ending with ".sav")
+--rf_path Complete path to a Random Forest model (ending with ".pkl")
 If not specified, default models are chosen.
 
 Following methods are implemented and may be used in other modules:
@@ -35,7 +35,7 @@ from random_forest_utils import roi_histograms
 
 def load_rf_with_conf(rf_path):
     """
-    :param rf_path: Path to Random Forest classifier model ending with ".sav"
+    :param rf_path: Path to Random Forest classifier model ending with ".pkl"
     :return: the loaded Random Forest classifier model and its configuration
     """
     rf_model = joblib.load(rf_path)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
                         "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
                         help='Whole path to nn checkpoint file ending with .data-00001....')
     parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "/home/tillns/CIL_project/RandomForest/"
-                        "final_model/random_forest_96_1.sav"), help='Whole path rf model (.sav)')
+                        "final_model/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
     args = parser.parse_args()
 
     if args.path is None:
@@ -161,4 +161,3 @@ if __name__ == '__main__':
     score_km = score_tensor_with_keras_model(tensor_km, km_model, km_conf['batch_size'])
     print("Mean Score. Random Forest: {} +- {}; Classifier NN: {} +- {}".format(np.mean(score_rf), np.std(score_rf),
                                                                                 np.mean(score_km), np.std(score_km)))
-
