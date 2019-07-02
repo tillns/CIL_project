@@ -41,6 +41,7 @@ def get_numpy(mode, num_images, path, save_np_to_mem, image_size):
     :param image_size: size of the images (e.g. 1000 for original data)
     :return: either numpy memmap or array
     """
+
     if save_np_to_mem:
         return np.memmap(path, dtype=np.float32, mode=mode,
                          shape=(num_images, image_size, image_size, 1))
@@ -53,6 +54,7 @@ def transform(img_np, use_fft):
     :param use_fft: whether to apply fast Fourier transform on input
     :return: numpy image array transformed to range from 0 to 1
     """
+
     if use_fft:
         # + 1, so it's never negative
         # 497.75647 is the absolute maximum on scored and query set and very specific to formula
@@ -74,6 +76,7 @@ def load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query, label_path
     :param percentage_train: split between training length and whole dataset length
     :return: training images and labels, validation images and labels, and list of image names
     """
+
     train_images, train_labels, test_images, test_labels = None, None, None, None
     image_size = conf['image_size']
     try:
@@ -128,11 +131,6 @@ def load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query, label_path
         print("\rLoaded image {}/{}".format(num + 1, dataset_len), end="")
     print("")
     return train_images, train_labels, test_images, test_labels, img_list
-    # following 4 lines gave min_val = 0 (unsurprisingly) and max_val = 497.75647 as used in transform
-    # max_test = -1000 if percentage_train == 1 else np.max(test_images)
-    # min_test = 1000 if percentage_train == 1 else np.min(test_images)
-    # max_val = max(np.max(train_images), max_test)
-    # min_val = min(np.min(train_images), min_test)
 
 
 def get_latest_cp(checkpoint_dir, epoch=None):
@@ -142,6 +140,7 @@ def get_latest_cp(checkpoint_dir, epoch=None):
     :param epoch: (optional) checkpoint epoch number
     :return: path to checkpoint
     """
+
     if not os.path.exists(checkpoint_dir):
         return None
     list_dir = os.listdir(checkpoint_dir)
@@ -159,6 +158,7 @@ def get_epoch_and_path(path):
     :param path: path to checkpoint
     :return: epoch to corresponding path, and path
     """
+
     if path is None:
         return 0, None
     filename = path.split("/")[-1]
@@ -172,6 +172,7 @@ def get_specific_cp(checkpoint_dir):
     :param checkpoint_dir: Path containing all runs
     :return: epoch and path to checkpoint
     """
+    
     while True:
         user_input = input("Enter the path of checkpoint file or leave empty to use latest checkpoint.")
         if len(user_input) == 0:

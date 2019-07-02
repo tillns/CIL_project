@@ -17,6 +17,8 @@ Group: Galaxy Crusaders
 - pywt
 - cython
 - matplotlib
+- gc
+- albumentations
 
 After installing all requirements, head into the `utils/` folder and run `python setup.py build_ext -i`
 to compile the cython files there.
@@ -51,6 +53,19 @@ TODO: Further explanation needed
 ## Similarity scorer task
 
 ### Classifier
+
+A similarity scorer using a Convolutional Neural Network.
+
+Training:
+
+    python classifier.py --dataset_dir=/path/to/cosmology_aux_data_170429
+
+Prediction:
+
+    python classifier.py --test_on_query=True --restore_ckpt=True --ckpt_path=/path/to/checkpoint/cp####.ckpt.data-00000-of-00001
+
+Where `/path/to/checkpoint/cp####.ckpt.data-00000-of-00001`
+is a valid path to the checkpoint and `####` is replaced with the checkpoint number. 
 
 ### RandomForest
 

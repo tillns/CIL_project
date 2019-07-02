@@ -26,6 +26,7 @@ def get_pad(x, total_padding=0, training=True):
                      rest on the other side.
     :return: padded tensor
     """
+
     if total_padding == 0:
         return x
     elif total_padding > 0:
@@ -52,6 +53,7 @@ def getNormLayer(norm_type='batch', momentum=0.9, epsilon=1e-5):
     :param epsilon: epsilon for Batch- and PixelNorm
     :return: the specified norm layer
     """
+
     if norm_type == 'pixel':
         return Pixel_norm(epsilon)
     if norm_type == 'batch':
@@ -64,6 +66,7 @@ class ResBlock(tf.keras.layers.Layer):
     Block of combined convolutions including normalizations and non-linearities. It allows for a residual connection
     between the input and the output.
     """
+
     def __init__(self, conf, downsample, features, last_features, **kwargs):
         """
         :param conf: configuration of classifier model
@@ -73,6 +76,7 @@ class ResBlock(tf.keras.layers.Layer):
                               input has to be projected using a small convolution in order for the features to match)
         :param kwargs: should contain the input dimensions
         """
+
         super(ResBlock, self).__init__(**kwargs)
         self.conf = conf
         self.model = tf.keras.Sequential()
@@ -129,6 +133,7 @@ class Padder(tf.keras.layers.Layer):
     Layer that pads its input with a total of padding in both height and width. E.g. an input of size bx125x125xc will
     be padded to bx128x128xc when padding is set to 3.
     """
+
     def __init__(self, padding=6, **kwargs):
         super(Padder, self).__init__(**kwargs)
         self.padding = padding
@@ -157,6 +162,7 @@ class Pixel_norm(tf.keras.layers.Layer):
     A different normalization layer than BatchNorm. Adopted from the project "Progressive Growing of GANs for Improved
     Quality, Stability, and Variation" (https://github.com/tkarras/progressive_growing_of_gans).
     """
+
     def __init__(self, epsilon=1e-8):
         super(Pixel_norm, self).__init__()
         self.epsilon = epsilon
@@ -176,6 +182,7 @@ class FactorLayer(tf.keras.layers.Layer):
     """
     A layer that multiplies its input with factor.
     """
+
     def __init__(self, factor):
         super(FactorLayer, self).__init__()
         self.factor = factor
@@ -199,6 +206,7 @@ def get_custom_objects():
     model = tf.keras.models.model_from_json(json_config, custom_objects=get_custom_objects())
     :return: list of all custom layers defined in this module
     """
+    
     layers = [ResBlock, Padder, Pixel_norm, FactorLayer]
     return_dict = {}
     for layer in layers:

@@ -19,11 +19,22 @@ import argparse
 from CustomLayers import ResBlock, Padder, get_custom_objects, getNormLayer
 from utils import get_epoch_and_path, get_specific_cp, load_dataset
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
+parser.add_argument('-T', '--test_on_query', type=bool, default=False)
+parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
+                    help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
+parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
+                    "Complete path to ckpt file ending with .data_00001...")
+parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to cosmology_aux_data_170429 dir", required=True)
+
 
 class CrossEntropy(tf.keras.losses.Loss):
-    """
+    """CrossEntropy
+
     Cross Entropy loss
     """
+
     def call(self, y_true, y_pred):
         from tensorflow.python.ops import math_ops
         from tensorflow.python.framework import ops
@@ -33,9 +44,11 @@ class CrossEntropy(tf.keras.losses.Loss):
 
 
 class CustomLoss(tf.keras.losses.Loss):
-    """
+    """CustomLoss
+
     Defines the loss based on the configuration
     """
+
     def __init__(self):
         super(CustomLoss, self).__init__()
         train_loss_type = conf['train_loss_type']
@@ -60,12 +73,13 @@ class CustomLoss(tf.keras.losses.Loss):
 
 def get_model():
     """Defines and returns the tf keras sequential model based on the config file.
-    
+
     Returns
     -------
     model : sequential tf keras model
         CNN model
     """
+
     features = conf['features']
     last_features = image_channels
     res = image_size
@@ -101,16 +115,6 @@ def get_model():
 
 
 if __name__ == '__main__':
-    # parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
-    parser.add_argument('-T', '--test_on_query', type=bool, default=False)
-    parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
-                        help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
-    parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
-                        "Complete path to ckpt file ending with .data_00001...")
-    parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to cosmology_aux_data_170429 dir")
-
     args = parser.parse_args()
 
     # load in the configurations from the config file
@@ -137,10 +141,8 @@ if __name__ == '__main__':
         os.makedirs(os.path.join(classifier_dir, "numpy_data"))
     checkpoint_dir = os.path.join(classifier_dir, "checkpoints/res{}".format(image_size))
 
-    """
-    Restoring the checkpoint. Unfortunately, this resets the loss as well as the best validation loss, so best complete
-    a training in one run.
-    """
+    #Restoring the checkpoint. Unfortunately, this resets the loss as well as the best validation loss, so best complete
+    #a training in one run.
     if restore_checkpoint:
         if args.ckpt_path is not None:
             epoch_start, specific_path = get_epoch_and_path(args.ckpt_path)
@@ -166,9 +168,7 @@ if __name__ == '__main__':
     else:
         model = get_model()
 
-    """
-    Testing model on the query data set.
-    """
+    #Testing model on the query data set.
     if test_on_query:
         with open(os.path.join(cp_dir_time, "config.yaml"), 'r') as stream:
             conf = yaml.full_load(stream)
@@ -225,8 +225,6 @@ if __name__ == '__main__':
                 layer.model.summary()
                 if conf['residual']:
                     layer.projection_model.summary()
-        # only necessary when neither batch norm nor dropout is used.
-        # See https://stackoverflow.com/questions/52107555/different-loss-function-for-validation-set-in-keras
         model.outputs[0]._uses_learning_phase = True
 
         # save the configs to the checkpoints folder
