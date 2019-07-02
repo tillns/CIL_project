@@ -1,6 +1,6 @@
 # Custom README for CIL project
 
-The code was downloaded from [here](https://github.com/tillns/CIL_project/tree/master/Conditional-PixelCNN-decoder-master). We crossed out the MNIST and CIFAR10 options and replaced them with the stars dataset. The dataset may be created with the star_extractor project. However, another dataset (of 28x28 pixels) may be used. The model can be used in either conditional or uncoditional setting, the autoencoder setting does nnot work. The training can be started with
+The code was downloaded from [here](https://github.com/anantzoid/Conditional-PixelCNN-decoder). We crossed out the MNIST and CIFAR10 options and replaced them with the stars dataset. The dataset may be created with the star_extractor project. However, another dataset (of 28x28 pixels) may be used. The model can be used in either conditional or uncoditional setting, the autoencoder setting does nnot work. The training can be started with
 - **Unconditional image generation**:  
     ```
     python main.py
