@@ -62,6 +62,7 @@ def transform(img_np, use_fft):
         img_np = img_np / 255
     return img_np
 
+
 class FFT_augm(DualTransform):
 
     def __init__(self, use_fft=True):

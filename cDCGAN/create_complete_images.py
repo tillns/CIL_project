@@ -35,6 +35,7 @@ image_channels = 1
 image_size = 1000
 home_dir = os.path.expanduser("~")
 
+# approximated star disrtibutions per image for 1 class and for 5 classes
 num_stars_per_cat_per_num_cats = {1: {0: (6.390691114245416, 2.527025670888084)},
                                   5: {0: (0.6685472496473907, 0.593681773720953),
                                       1: (3.097790314997649, 1.8328121002868505),
@@ -116,9 +117,12 @@ def create_complete_images(gen_model, vmin=0, num_images_to_create=100, num_clas
              and also the drawn star latents and their positions
     """
     if load_dict:
-        latents_per_pic = load_obj("latents_per_pic")
-        stars_pos = load_obj("stars_pos")
-    else:
+        try:
+            latents_per_pic = load_obj("latents_per_pic_{}".format(num_classes))
+            stars_pos = load_obj("stars_pos_{}".format(num_classes))
+        except FileNotFoundError:
+            load_dict = False
+    if not load_dict:
         num_stars_per_pic = get_classes_dict(num_classes, 'list')
         latents_per_pic = get_classes_dict(num_classes, 'list')
         stars_pos = [[] for i in range(num_images_to_create)]
@@ -187,6 +191,7 @@ def find_and_save_best_setting(gen_model, conf, num_classes, rf_model, rf_conf, 
     :param best_score: Score threshold. Only scores above are counted as new best settings.
     """
     counter = 0
+    img_save_dir = os.path.join(home_dir, "CIL_project/cDCGAN/compl_images_{}".format(num_classes))
     while True:
         rf_score, nn_score, image_tensor, latents_per_pic, stars_pos \
             = create_and_score_images(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf,
@@ -194,12 +199,11 @@ def find_and_save_best_setting(gen_model, conf, num_classes, rf_model, rf_conf, 
         current_score = (np.mean(rf_score) + np.mean(nn_score)) / 2
         if current_score > best_score:
             best_score = current_score
-            save_obj(latents_per_pic, "latents_per_pic")
-            save_obj(stars_pos, "stars_pos")
+            save_obj(latents_per_pic, "latents_per_pic_{}".format(num_classes))
+            save_obj(stars_pos, "stars_pos_{}".format(num_classes))
             for num_img in range(image_tensor.shape[0]):
                 img_np2 = image_tensor[num_img, :, :, 0]
-                plt.imsave(os.path.join(os.path.join(home_dir, "CIL_project/cDCGAN/compl_images"),
-                                        "{}.png".format(num_img)), img_np2, cmap='gray', vmin=0, vmax=255)
+                plt.imsave(os.path.join(img_save_dir, "{}.png".format(num_img)), img_np2, cmap='gray', vmin=0, vmax=255)
         counter += 1
         print("\rFinished round {} Current best score: {}".format(counter, best_score), end="")
 
@@ -252,7 +256,6 @@ def main(args):
         print("Mean score {} +- {}".format(np.mean(score), np.std(score)))
 
 
-# todo: make savable latents and pos dependent on num_classes
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', '--checkpoint_path', type=str, default=os.path.join(home_dir,
@@ -264,7 +267,8 @@ if __name__ == '__main__':
     parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "CIL_project/RandomForest/final_model/"
                         "random_forest_96_1.sav"), help='Whole path rf model (.sav)')
     parser.add_argument('-f', '--find_best_num_stars_per_image', type=bool, default=True)
-    parser.add_argument('--min_score', type=float, default=2.948633233877742,
+    parser.add_argument('--min_score', type=float, default=2.9486,
+                        # 2.9486 is the highest mean score found after 2000 iterations
                         help="Don't save latents and images for scores below min_score.")
     args = parser.parse_args()
 

@@ -71,7 +71,7 @@ def get_model():
     
     Returns
     -------
-    model : sequential tf model
+    model : sequential tf keras model
         CNN model
     """
     features = conf['features']
@@ -81,10 +81,10 @@ def get_model():
 
     model = tf.keras.Sequential(name='till_model')
     while res > conf['min_res']:
-        if res == 250:
-            closestexpres = 256
+        if res == 125:
+            closestexpres = 128
             model.add(Padder(padding=closestexpres - res,
-                             input_shape=(res, res, last_features)))  # 250 -> 256
+                             input_shape=(res, res, last_features)))  # 125 -> 128
             res = closestexpres
         for i in range(conf['num_blocks_per_res']):
             downsample = (i == 0 and conf['downsample_with_first_conv']) or \
@@ -209,9 +209,8 @@ if __name__ == '__main__':
         Train model on the scored data set.
         """
         cp_dir_time = os.path.join(checkpoint_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
-        code_dir = os.path.join(cp_dir_time, "code")
-        if not os.path.exists(code_dir):
-            os.makedirs(code_dir)
+        if not os.path.exists(cp_dir_time):
+            os.makedirs(cp_dir_time)
         cp_path = os.path.join(cp_dir_time, "cp-{epoch:04d}.ckpt")
         cp_callback = tf.keras.callbacks.ModelCheckpoint(cp_path,
                                                          save_weights_only=True, save_best_only=percentage_train<1,
@@ -266,7 +265,6 @@ if __name__ == '__main__':
                         if conf['residual']:
                             layer.projection_model.summary(print_fn=lambda mylambda: file.write(mylambda + '\n'))
 
-            os.system("cp {} {}".format(os.path.join(classifier_dir, "*.py"), code_dir))
             os.system('cp {} {}'.format(os.path.join(classifier_dir, "config.yaml"), cp_dir_time))
 
         aug = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=0,

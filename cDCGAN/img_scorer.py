@@ -148,7 +148,7 @@ if __name__ == '__main__':
         images_rf.append(img_rf)
         images_kmodel.append(img_km)
     else:
-        for filename in os.listdir(args.path):
+        for filename in sorted(os.listdir(args.path)):
             if (filename.endswith(".png") or filename.endswith(".jpg")) and not filename.startswith("._"):
                 img_path = os.path.join(args.path, filename)
                 img_rf, img_km = get_rf_and_km_img(img_path, res_for_rf, res_for_keras_model, km_conf)
