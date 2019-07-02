@@ -25,6 +25,10 @@ to compile the cython files there.
 
 ## Image generation task
 
+## Stars Extractor
+
+This project only contains some scripts to extract stars from the original images (stars_extractor.py), filter the original star images (create_dir_for_labeled_star_images.py) and also for measuring and approximating an integer gaussian distribution of all kinds of stars in the images (stars_clustered_distribution.py). The files can be run without additional arguments (e.g. python stars_extractor.py). Please refer to their individual documentation for adjustment of the default arguments.
+
 ### AE_plus_KMeans
 
 ### Adhoc_generator

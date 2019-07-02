@@ -8,16 +8,16 @@ import os
 import sys
 import argparse
 
+home_dir = os.path.expanduser("~")
+parser = argparse.ArgumentParser()
+parser.add_argument('--kind', type=str, default="scored", help="'scored' or 'labeled'")
+parser.add_argument('--scored_thresh', type=float, default=3, help="For scored images, "
+                                                                   "only save those >= this threshold")
+# TODO remove hardcoded path, add help and required flag
+parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir,
+                    "dataset/cil-cosmology-2018/cosmology_aux_data_170429/mytest"))
 
 if __name__ == '__main__':
-
-    home_dir = os.path.expanduser("~")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--kind', type=str, default="scored", help="'scored' or 'labeled'")
-    parser.add_argument('--scored_thresh', type=float, default=3, help="For scored images, "
-                                                                       "only save those >= this threshold")
-    parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir,
-                        "dataset/cil-cosmology-2018/cosmology_aux_data_170429/mytest"))
     args = parser.parse_args()
     image_dir = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/{}".format(args.kind))
     label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/{}.csv".format(args.kind))
@@ -50,4 +50,3 @@ if __name__ == '__main__':
         if (args.kind == 'labeled' and label == 1) or (args.kind == 'scored' and label >= args.scored_thresh):
             os.system("cp {} {}".format(os.path.join(image_dir, img_list[num]),
                                         os.path.join(new_image_directory, img_list[num])))
-

@@ -15,6 +15,14 @@ import glob
 import numpy as np
 import argparse
 
+# TODO remove hard coded paths and add help and required flags
+home_dir = os.path.expanduser("~")
+parser = argparse.ArgumentParser()
+parser.add_argument('--unclustered_stars_dir', type=str, default=os.path.join(home_dir,
+                    "CIL_project/extracted_stars/labeled1_and_scoredover3"))
+parser.add_argument('--clustered_stars_dir', type=str, default=os.path.join(home_dir,
+                    "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats"))
+parser.add_argument('--precision', type=float, default=0.05, help="Precision for approximation.")
 
 def get_mean(some_list):
     return sum(some_list)/len(some_list)
@@ -73,8 +81,8 @@ def find_good_distr_approx_iteratively(mean, std, precision=0.05):
         approximated standard deviation of number of stars of specific kind in an image
 
     These numbers may equal the input if they already approximate well enough (within the set precision).
-
     """
+
     current_mean = mean
     current_std = std
     current_add = 0.1
@@ -101,14 +109,6 @@ def find_good_distr_approx_iteratively(mean, std, precision=0.05):
 
 
 if __name__ == '__main__':
-
-    home_dir = os.path.expanduser("~")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--unclustered_stars_dir', type=str, default=os.path.join(home_dir,
-                        "CIL_project/extracted_stars/labeled1_and_scoredover3"))
-    parser.add_argument('--clustered_stars_dir', type=str, default=os.path.join(home_dir,
-                        "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats"))
-    parser.add_argument('--precision', type=float, default=0.05, help="Precision for approximation.")
     args = parser.parse_args()
     unclustered_stars_dir = args.unclustered_stars_dir
     clustered_stars_dir = args.clustered_stars_dir

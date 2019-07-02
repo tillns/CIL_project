@@ -1,4 +1,5 @@
 """ Stars Extractor
+
 Takes as input --img_dir a directory containing the 1000x1000 star images. You may use
 create_dir_for_labeled_star_images.py to create a directory with only fitting images (without the low-score ones).
 The second input --target_dir specifies where to save the 28x28 extracted star patches. It also prints some basic
@@ -12,6 +13,14 @@ from PIL import Image
 import cv2
 import argparse
 from stars_clustered_distribution import get_mean, get_std
+
+home_dir = os.path.expanduser("~")
+parser = argparse.ArgumentParser()
+# TODO remove hard coded paths and add help and required flags
+parser.add_argument('--img_dir', type=str, default=os.path.join(home_dir,
+                    "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3"))
+parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir,
+                    "CIL_project/extracted_stars/labeled1_and_scoredover3"))
 
 
 def _extract_stars_28x28(image):
@@ -32,7 +41,6 @@ def _extract_stars_28x28(image):
     -------
     patches : list
         A list containing the resulting 28x28 patches.
-
     """
 
     _, image_binary = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY)
@@ -74,12 +82,6 @@ def _extract_stars_28x28(image):
 
 
 if __name__ == '__main__':
-    home_dir = os.path.expanduser("~")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--img_dir', type=str, default=os.path.join(home_dir,
-                        "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3"))
-    parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir,
-                        "CIL_project/extracted_stars/labeled1_and_scoredover3"))
     args = parser.parse_args()
 
     img_dir = args.img_dir
