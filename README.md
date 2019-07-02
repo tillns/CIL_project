@@ -5,6 +5,23 @@ Authors: Sven Kellenberger, Hannes Pfammatter, Till Schnabel, Michelle Woon
 
 Group: Galaxy Crusaders
 
+## TODO
+
+### Delete unnecessary files
+
+- Generated images are at the moment in many different locations and even have different names. Either delete them or make a seperate directory with only images and remove images everywhere else. Also remove `.zip` files.
+- `RandomForest/final_model/` if this is needed for another model, save the `.pkl` file there (only this file, no config, losses etc.).
+- `papers/` I don't think that we should have the papers we cite on Github
+- `cDCGAN/` I would remove the `reference_run` because it is reproducible. I would also remove the `.pkl` files but we could also leave those.
+- `Classifier/` Same for `reference_run`
+- `DCGAN` remove checkpoints and the `.csv` files
+
+### Code
+
+- All open points in the code are marked with a `TODO` comment.
+- Documentation is not always consistent (at times `Paramters`, other times `params:`). However this is consistent if you only look into at single files so this doens't have to be done.
+- I am not sure but I am under the impression that some things are not needed any more. The person who created it should be able to decide this but don't be afraid to delete things! (after all that's why we use git)
+
 ## Requirements
 
 - jupyter
@@ -19,6 +36,7 @@ Group: Galaxy Crusaders
 - matplotlib
 - gc
 - albumentations
+- opencv-python
 
 After installing all requirements, head into the `utils/` folder and run `python setup.py build_ext -i`
 to compile the cython files there.
@@ -49,6 +67,52 @@ https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced pub
 ### GAN
 
 ### VAE_stars
+
+A variational autoencoder model for star image generation.
+
+#### Paths
+- The path to the folder containing the labeled images and the path to the CSV file containing the image labels have to be set inside `star_vae_train.py`
+
+#### Execution
+##### Training
+
+`python star_vae_train.py`
+
+Or on the cluster:
+
+`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python star_vae_train.py"`
+
+The weights of the generative model (decoder) are subsequently saved inside `/ckpt_generative`.
+
+##### Star image generation
+
+`python generate_star_images.py`
+
+Or on the cluster:
+
+`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python generate_star_images.py`
+
+The generated 28x28 star images are subsequently saved inside `/generated`.
+
+##### Complete image generation
+
+`python generate_complete_images.py`
+
+Or on the cluster:
+
+`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python generate_complete_images.py`
+
+The generated 1000x1000 galaxy images are subsequently saved inside `/generated`.
+
+##### Complete image evaluation
+
+`python evaluate_complete_images.py`
+
+Or on the cluster:
+
+`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python evaluate_complete_images.py`
+
+The generated 1000x1000 galaxy images inside `/generated` are evaluated. The similarity scores are stored inside `scorefile.csv`.
 
 ### stars_extractor
 
