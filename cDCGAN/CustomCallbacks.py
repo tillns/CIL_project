@@ -10,7 +10,10 @@ class CallbackList(object):
     (all the losses and scores available). If validation is performed in the current epoch, call call_begin_hook('test')
     at the beginning and call_end_hook('test') at the end and fill the logs with validation values. At the end of the
     epoch, call on_epoch_end(epoch, epoch_logs) with the filled epoch_logs dictionary.
+
+    TODO: Documentation for all methods is missing
     """
+
     def __init__(self, callbacks, models):
         assert len(callbacks) == len(models)
         self.callbacks = []

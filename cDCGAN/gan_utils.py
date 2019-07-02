@@ -6,6 +6,7 @@ This module provides useful methods for the cDCGAN. It implements the following 
     #one_hot
     #generate_and_save_images
 """
+
 import cv2
 import os
 import numpy as np
@@ -18,6 +19,7 @@ def transform_norm(numpy_image_array, conf):
     :param conf: cDCGAN configuration
     :return: copy of the numpy image array, linearly transformed to range from conf['vmin'] to conf['vmax']
     """
+
     return numpy_image_array / 255.0 * (conf['vmax']-conf['vmin']) + conf['vmin']
 
 
@@ -27,6 +29,7 @@ def detransform_norm(numpy_image_array, conf):
     :param conf: cDCGAN configuration
     :return: copy of the numpy image array, linearly transformed to range from 0 to 255
     """
+
     return (numpy_image_array - conf['vmin']) / (conf['vmax']-conf['vmin']) * 255.0
 
 
@@ -38,6 +41,7 @@ def load_dataset(conf, image_directory, image_size):
     :param image_size: Size of the images to load
     :return: training images, validation images, training labels, and validation labels
     """
+
     images = []
     if not conf['conditional']:
         conf['num_classes'] = 1
@@ -89,6 +93,7 @@ def one_hot(batch_y, num_classes):
     :param num_classes: total number of classes
     :return: batch_sized matrix, for each image a vector with value 1 at the class label entry and 0 otherwise
     """
+
     y_ = np.zeros((batch_y.shape[0], num_classes))
     y_[np.arange(batch_y.shape[0]), batch_y] = 1
     return y_
@@ -103,6 +108,7 @@ def generate_and_save_images(model, epoch, test_input, conf, save_image_path):
     :param conf: model configuration
     :param save_image_path: path to folder in which to save generated images.
     """
+    
     tot = test_input.shape[0]
     per_row = int(np.sqrt(tot)) if not conf['conditional'] else conf['num_classes']
     if conf['conditional']:

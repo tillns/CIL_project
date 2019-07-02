@@ -13,7 +13,10 @@ class Models():
     patches, 3 for unconditional 28x28 patches, and 1 and 2 were made for the big images (also unconditional).
     Call get_discriminator_model() to get the specified kind of keras sequential discriminator
     model, and get_generator_model for the corresponding generator model.
+
+    TODO: documentation for all methods missing. Also some comments would make the Code more readable.
     """
+
     def __init__(self, conf):
         self.conf = conf
         self.model_kind = conf['model_kind']
@@ -47,7 +50,6 @@ class Models():
                     model.add(tf.keras.layers.Conv2D(features, (conf['kernel'], conf['kernel']),
                                                      kernel_regularizer=kernel_regularizer, padding='same', strides=strides,
                                                      use_bias=dconf['use_bias'], input_shape=(res, res, conf['image_channels'])))
-                    # depth wrong for following convs, but doesn't seem to matter, so I'll let it be
                     model.add(getNormLayer(conf['norm_type']))
                     model.add(tf.keras.layers.LeakyReLU(alpha=conf['lrelu_alpha']))
                     if i == 0 and not dconf['strided_conv']:
@@ -80,7 +82,6 @@ class Models():
 
             model.add(tf.keras.layers.Flatten())
             model.add(tf.keras.layers.Dense(1))
-            #model.add(tf.keras.layers.Activation('sigmoid'))
 
         elif self.model_kind == 3:
             if dconf['strided_conv']:
@@ -136,7 +137,6 @@ class Models():
 
             x = tf.keras.layers.Concatenate()([x, x_c])
             out_x = tf.keras.layers.Dense(1)(x)
-            # out_x = tf.keras.layers.Activation('sigmoid')(out_x)
 
             model = tf.keras.models.Model(inputs=[input_image, input_c], outputs=out_x, name='dis')
 

@@ -1,12 +1,6 @@
 """
 The purpose of this module is to score either a single image or a whole directory containing images with the Random
 Forest as well as neural network classifier model.
-The necessary argument is:
---path The complete path to either a loadable image or a directory containing loadable images
-Optional arguments are:
---nn_path Complete path to a keras model checkpoint (ending with ".data-00000-of-00001")
---rf_path Complete path to a Random Forest model (ending with ".pkl")
-If not specified, default models are chosen.
 
 Following methods are implemented and may be used in other modules:
     #load_rf_with_conf
@@ -32,12 +26,22 @@ from CustomLayers import get_custom_objects
 from utils import transform as km_transform
 from roi_utils import roi_histograms
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--path', type=str, default=None,
+                    help='Whole path to dir with images or path to individual image.')
+parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/reference_run/"
+                    "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
+                    help='Whole path to nn checkpoint file ending with .data-00001....')
+parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "/home/tillns/CIL_project/RandomForest/"
+                    "final_model/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
+
 
 def load_rf_with_conf(rf_path):
     """
     :param rf_path: Path to Random Forest classifier model ending with ".pkl"
     :return: the loaded Random Forest classifier model and its configuration
     """
+
     rf_model = joblib.load(rf_path)
     with open(os.path.join(os.path.dirname(rf_path), "config.yaml"), 'r') as stream:
         conf = yaml.full_load(stream)
@@ -53,6 +57,7 @@ def load_km_with_conf(ckpt_path, model_name="model_config.json"):
     :param model_name: name of model file in the same directory
     :return: keras model and its configuration
     """
+
     if ckpt_path.endswith('.data-00000-of-00001'):
         ckpt_path = ckpt_path[:-len('.data-00000-of-00001')]
     model_path = os.path.join("/".join(ckpt_path.split("/")[:-1]), model_name)
@@ -78,6 +83,7 @@ def score_tensor_with_rf(image_tensor, rf_model, conf):
     :param conf: loaded configuration of rf_model (use load_rf_with_conf() to get it from rf_model path)
     :return: tensor of shape [num_images, 1] containing a predicted score for each image in image_tensor
     """
+
     if len(image_tensor.shape) == 4:
         image_tensor = image_tensor[:, :, :, 0]
     hist_list = []
@@ -96,6 +102,7 @@ def score_tensor_with_keras_model(image_tensor, model, batch_size):
     :param batch_size: appropriate batch size for GPU memory
     :return: tensor of shape [num_images, 1] containing a predicted score for each image in image_tensor
     """
+
     score_list = []
     for it in range(math.ceil(image_tensor.shape[0]/batch_size)):
         x_ = image_tensor[it*batch_size:min((it+1)*batch_size, image_tensor.shape[0])]
@@ -113,6 +120,7 @@ def get_rf_and_km_img(img_path, res_for_rf, res_for_km, km_conf):
     :param km_conf: configuration array for the neural network classifier
     :return: image prepared for Random Forest and image prepared for neural network, each in numpy format
     """
+    
     img = Image.open(img_path).resize((1000, 1000)).convert('L')
     img_rf = img.resize((res_for_rf, res_for_rf))
     img_np_rf = np.array(img_rf, dtype=np.float32).reshape((res_for_rf, res_for_rf))
@@ -123,14 +131,6 @@ def get_rf_and_km_img(img_path, res_for_rf, res_for_km, km_conf):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--path', type=str, default=None,
-                        help='Whole path to dir with images or path to individual image.')
-    parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/reference_run/"
-                        "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
-                        help='Whole path to nn checkpoint file ending with .data-00001....')
-    parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "/home/tillns/CIL_project/RandomForest/"
-                        "final_model/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
     args = parser.parse_args()
 
     if args.path is None:

@@ -23,8 +23,10 @@ from img_scorer import load_km_with_conf, load_rf_with_conf, score_tensor_with_r
 from CustomCallbacks import CallbackList
 from gan_utils import load_dataset, generate_and_save_images, detransform_norm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # disables some annoying tensorflow warnings
-"""### Set initial parameters"""
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to directory containing images or "
+                                                                  "image class folders with corresponding images")
 
 def discriminator_loss(real_logits, fake_logits, conf):
     """
@@ -33,6 +35,7 @@ def discriminator_loss(real_logits, fake_logits, conf):
     :param conf: GAN configuration
     :return: discriminator loss where the loss kind is chosen from the configuration
     """
+
     label_zero = tf.zeros([real_logits.shape[0], 1])
     label_one = tf.ones([real_logits.shape[0], 1])
 
@@ -54,6 +57,7 @@ def generator_loss(fake_logits, conf):
     :param conf: GAN configuration
     :return: generator loss where the loss kind is chosen from the configuration
     """
+
     label_one = tf.ones([fake_logits.shape[0], 1])
     if conf['gan_loss'] == 'lsgan':
         return tf.reduce_mean(tf.square(fake_logits - label_one))
@@ -78,6 +82,7 @@ def train_step(images, labels, generator, discriminator, iteration, progbar, con
     :param discriminator_optimizer:
     :return: generator and discriminator loss
     """
+
     current_batch_size = images.shape[0]
     batch_logs = callbacks.duplicate_logs_for_models({'batch': iteration, 'size': current_batch_size})
     # print("Batch logs: {}".format(batch_logs))
@@ -121,6 +126,7 @@ def train_gan(args):
     been achieved. A summary for tensorboard is kept in the summary folder inside the checkpoint directory.
     :param args: arguments passed to module
     """
+
     with open("config.yaml", 'r') as stream:
         conf = yaml.full_load(stream)
     image_size = conf['image_size']
@@ -275,7 +281,4 @@ def train_gan(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to directory containing images or "
-                                                                      "image class folders with corresponding images")
     train_gan(parser.parse_args())
