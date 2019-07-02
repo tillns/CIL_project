@@ -1,3 +1,13 @@
+"""
+This is the main module of this project. It trains a conditional or unconditional DCGAN on either the (clustered)
+star patches or the whole images. No arguments are required. Edit the necessary configuration in config.yaml.
+Following methods are implemented:
+    #discriminator_loss
+    #generator_loss
+    #train_step
+    #train_gan
+"""
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 import tensorflow as tf
 import numpy as np
