@@ -1,39 +1,29 @@
 """Classifier
 
-This file trains a CNN classifier and evaluates it against a test set. It also predicts
-the scores for a query data set and saves them to a file.
+This is the project's main module. You can use it to train a neural network classifier with tensorflow keras. Edit the
+network's configurations in config.yaml. It may also be used to predict a score for the given query set.
 
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
-# TensorFlow and tf.keras
 import tensorflow as tf
-
-
-# Helper libraries
 import numpy as np
 import os
-import PIL
-from PIL import Image
 import sys
 import math
 from datetime import datetime
 from sklearn.linear_model import LinearRegression
 import csv
 import yaml
-import gc
 import argparse
-import cv2
-from albumentations import (
-    Compose, HorizontalFlip, ShiftScaleRotate, VerticalFlip
-)
 from CustomLayers import ResBlock, Padder, get_custom_objects, getNormLayer
-from utils import get_epoch_and_path, get_specific_cp, load_dataset, FFT_augm, Augm_Sequence, \
-    get_max_val_fft
+from utils import get_epoch_and_path, get_specific_cp, load_dataset
 
 
 class CrossEntropy(tf.keras.losses.Loss):
-    # Cross Entropy loss
+    """
+    Cross Entropy loss
+    """
     def call(self, y_true, y_pred):
         from tensorflow.python.ops import math_ops
         from tensorflow.python.framework import ops
@@ -43,7 +33,9 @@ class CrossEntropy(tf.keras.losses.Loss):
 
 
 class CustomLoss(tf.keras.losses.Loss):
-    # Defines the loss based on the config file
+    """
+    Defines the loss based on the configuration
+    """
     def __init__(self):
         super(CustomLoss, self).__init__()
         train_loss_type = conf['train_loss_type']
@@ -67,7 +59,7 @@ class CustomLoss(tf.keras.losses.Loss):
 
 
 def get_model():
-    """Defines and returns the CNN model based on the config file.
+    """Defines and returns the tf keras sequential model based on the config file.
     
     Returns
     -------
@@ -77,7 +69,6 @@ def get_model():
     features = conf['features']
     last_features = image_channels
     res = image_size
-    resexp = [pow(2, x) for x in range(10)]
 
     model = tf.keras.Sequential(name='till_model')
     while res > conf['min_res']:
@@ -105,8 +96,7 @@ def get_model():
     if conf['num_dense_layers'] == 1:
         model.add(tf.keras.layers.Dropout(conf['dropout']))
     model.add(tf.keras.layers.Dense(1, use_bias=conf['use_bias']))
-    # model.add(SigmoidLayer())
-    # model.add(FactorLayer(8))  # to make output range from 0 to 8
+
     return model
 
 
@@ -115,9 +105,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
     parser.add_argument('-T', '--test_on_query', type=bool, default=False)
-    parser.add_argument('-R', '--restore_ckpt', type=bool, default=False, help="Can't be false if test_on_query is True")
+    parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
+                        help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
     parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
                         "Complete path to ckpt file ending with .data_00001...")
+    parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to cosmology_aux_data_170429 dir")
 
     args = parser.parse_args()
 
@@ -130,25 +122,22 @@ if __name__ == '__main__':
     restore_checkpoint = True if test_on_query else args.restore_ckpt
     image_size = conf['image_size']
     image_channels = 1
-    home_dir = os.path.expanduser("~")
-    classifier_dir = os.path.join(home_dir, "CIL_project/Classifier")
-    scored_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored")
-    label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/scored.csv")
-    query_directory = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/query")
+    cil_dir = os.path.dirname(os.path.dirname(__file__))
+    classifier_dir = os.path.join(cil_dir, "Classifier")
+    scored_directory = os.path.join(args.dataset_dir, "scored")
+    label_path = os.path.join(args.dataset_dir, "scored.csv")
+    query_directory = os.path.join(args.dataset_dir, "query")
     image_directory = query_directory if test_on_query else scored_directory
     percentage_train = conf['percentage_train'] if not test_on_query else 1
-    print("Searching for images in {}".format(image_directory))
-    use_dummy_dataset = False
     period_to_save_cp = conf['period_to_save_cp'] if percentage_train == 1 else 1
     tot_num_epochs = conf['tot_num_epochs']
     label_range = 8  # labels go from 0 to 8
     save_np_to_mem = image_size > 250 and not args.is_cluster
-
-    # checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
     checkpoint_dir = os.path.join(classifier_dir, "checkpoints/res{}".format(image_size))
 
     """
-    Restoring the checkpoint
+    Restoring the checkpoint. Unfortunately, this resets the loss as well as the best validation loss, so best complete
+    a training in one run.
     """
     if restore_checkpoint:
         if args.ckpt_path is not None:
@@ -164,16 +153,13 @@ if __name__ == '__main__':
             model_path = os.path.join("/".join(specific_path.split("/")[:-1]), "model_config.json")
             if not os.path.exists(model_path):
                 sys.exit("Couldn't locate model")
-            # model = tf.keras.models.load_model(os.path.join(model_path), custom_objects={'Padder': Padder, 'FactorLayer': FactorLayer, 'SigmoidLayer':SigmoidLayer})
             with open(model_path) as json_file:
                 json_config = json_file.read()
-            custom_objects = get_custom_objects()
-
-            model = tf.keras.models.model_from_json(json_config, custom_objects=custom_objects)
+            model = tf.keras.models.model_from_json(json_config, custom_objects=get_custom_objects())
             model.load_weights(specific_path)
             model.summary()
         else:
-            print("Couldn't find a checkpoint. Starting from scratch.")
+            sys.exit("Checkpoint not found.")
 
     else:
         model = get_model()
@@ -204,13 +190,12 @@ if __name__ == '__main__':
                 print("\rScored image {}/{}".format(min((i + 1) * batch_size, query_images.shape[0]),
                                                     query_images.shape[0]), end="")
 
+    # (Continue to) train the model
     else:
-        """
-        Train model on the scored data set.
-        """
-        cp_dir_time = os.path.join(checkpoint_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
-        if not os.path.exists(cp_dir_time):
-            os.makedirs(cp_dir_time)
+        if not restore_checkpoint:
+            cp_dir_time = os.path.join(checkpoint_dir, datetime.now().strftime("%Y%m%d-%H%M%S"))
+            if not os.path.exists(cp_dir_time):
+                os.makedirs(cp_dir_time)
         cp_path = os.path.join(cp_dir_time, "cp-{epoch:04d}.ckpt")
         cp_callback = tf.keras.callbacks.ModelCheckpoint(cp_path,
                                                          save_weights_only=True, save_best_only=percentage_train<1,
@@ -222,15 +207,8 @@ if __name__ == '__main__':
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path)
 
         linear_model = LinearRegression()
-
-        """## Train the model
-        
-        As the model trains, the loss and accuracy metrics are displayed. This model reaches an accuracy of about 0.88 (or 88%) on the training data.
-        """
         learning_rate = conf['lr']
         optimizer = tf.keras.optimizers.Adam(learning_rate, decay=1/tot_num_epochs)
-
-        """As I see it, there is a bug in the keras library that forbids the labels y from training and test set to have different unique values (which is here the case because y is a continuous label)"""
 
         epochs = conf['num_epochs_for_lin_regression']
         batch_size = conf['batch_size']
@@ -267,13 +245,13 @@ if __name__ == '__main__':
 
             os.system('cp {} {}'.format(os.path.join(classifier_dir, "config.yaml"), cp_dir_time))
 
+        # Define augmentations
         aug = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=0,
-                                                              zoom_range=0,  # used to be 0.15
+                                                              zoom_range=0,
                                                               width_shift_range=0.2, height_shift_range=0.2,
-                                                              # used to be 0.2 both
-                                                              shear_range=0,  # used to be 0.15
+                                                              shear_range=0,
                                                               horizontal_flip=True, vertical_flip=True,
-                                                              fill_mode="nearest",  # both flips were True
+                                                              fill_mode="nearest",
                                                               validation_split=0)
         val = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=0,
                                                               zoom_range=0,
@@ -290,8 +268,9 @@ if __name__ == '__main__':
         query_images, train_labels, test_images, test_labels, _ = load_dataset(conf, save_np_to_mem, classifier_dir,
                                                                                test_on_query, label_path,
                                                                                image_directory, percentage_train)
+        # train the network until either the upper limit has been reached or no improvement on the val set was measured
+        # over a large number of epochs
         while True:
-            # train the network
             if percentage_train < 1:
                 validation_data = val.flow(test_images, test_labels, batch_size=batch_size, shuffle=False)
             else:
@@ -300,9 +279,8 @@ if __name__ == '__main__':
                                     initial_epoch=counter, epochs=counter + epochs,
                                     callbacks=[tensorboard_callback, cp_callback], shuffle=True,
                                     validation_data=validation_data)
-            #test_model()
-            # save whole model after first run through
             counter += epochs
+            # Check for an improvement on the val set via linear regression
             if validation_data is not None:
                 val_data = np.append(val_data, np.array(H.history['val_loss']).reshape((-1, 1)), 0)
                 if counter % conf['num_epochs_for_lin_regression'] == 0:
@@ -324,5 +302,3 @@ if __name__ == '__main__':
 
             elif counter >= tot_num_epochs:
                 break
-
-        print("All done")

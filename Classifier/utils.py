@@ -1,40 +1,27 @@
 """Utils for the CNN Classifier
 
 This module contains the following public functions:
-    #get_random_indices
     #isInt
     #get_numpy
-    #get_max_val_fft
     #transform
     #load_dataset
     #get_latest_cp
     #get_epoch_and_path
     #get_specific_cp
-    
-And the following classes:
-    #FFT_augm
-    #Augm_Sequence
 """
 
 import tensorflow as tf
-from CustomLayers import Pixel_norm, FactorLayer
-from random import shuffle
-import matplotlib.pyplot as plt
 import os
 from PIL import Image
 import numpy as np
-from tensorflow.python.keras.utils.data_utils import Sequence
-from albumentations import DualTransform
 import sys
 
 
-def get_random_indices(begin=0, end=9600, num_indices=25):
-    list1 = list(range(begin, end))
-    shuffle(list1)
-    return list1[:num_indices]
-
-
 def isInt(s):
+    """
+    :param s: obj
+    :return: True if s is (castable to) an integer; False otherwise
+    """
     try:
         int(s)
         return True
@@ -43,37 +30,50 @@ def isInt(s):
 
 
 def get_numpy(mode, num_images, path, save_np_to_mem, image_size):
+    """
+    Due to local RAM restrictions, the numpy data had to be saved to disk. On the other hand, on the cluster the data
+    could not be saved to disk due to disk restrictions, but there was enough RAM available. This method returns a numpy
+    memmap, which is a mapping to the saved file, or a normal numpy array if the conditions allow for it.
+    :param mode: for memmap, 'r+' for reading files (when they've already been created) and 'w+' for creating new ones
+    :param num_images: number of images (e.g. 9600 for scored data)
+    :param path: path to numpy memmap
+    :param save_np_to_mem: Whether to use memmap or not
+    :param image_size: size of the images (e.g. 1000 for original data)
+    :return: either numpy memmap or array
+    """
     if save_np_to_mem:
         return np.memmap(path, dtype=np.float32, mode=mode,
                          shape=(num_images, image_size, image_size, 1))
     return np.zeros((num_images, image_size, image_size, 1), dtype=np.float32)
 
 
-def get_max_val_fft():
-    return 497.75647  # very specific to formula in transform
-
-
 def transform(img_np, use_fft):
+    """
+    :param img_np: input numpy array ranging from 0 to 255
+    :param use_fft: whether to apply fast Fourier transform on input
+    :return: numpy image array transformed to range from 0 to 1
+    """
     if use_fft:
         # + 1, so it's never negative
-        img_np = np.float32(20 * np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np))) ** 2 + 1)
-                            / get_max_val_fft())
+        # 497.75647 is the absolute maximum on scored and query set and very specific to formula
+        img_np = np.float32(20 * np.log(np.abs(np.fft.fftshift(np.fft.fft2(img_np))) ** 2 + 1) / 497.75647)
     else:
         img_np = img_np / 255
     return img_np
 
 
-class FFT_augm(DualTransform):
-
-    def __init__(self, use_fft=True):
-        super(FFT_augm, self).__init__(True, 1)
-        self.use_fft = use_fft
-
-    def apply(self, img, **params):
-        return transform(img, self.use_fft)
-
-
 def load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query, label_path, image_directory, percentage_train):
+    """
+    Load images inside a directory and split them into training and validation set including labels for both
+    :param conf: classifier configuration
+    :param save_np_to_mem: whether to use memmap (see get_numpy() for an explanation)
+    :param classifier_dir: directory of the classifier project
+    :param test_on_query: Whether to test classifier on query set
+    :param label_path: path to labels (ending with .csv)
+    :param image_directory: directory of the images to load
+    :param percentage_train: split between training length and whole dataset length
+    :return: training images and labels, validation images and labels, and list of image names
+    """
     train_images, train_labels, test_images, test_labels = None, None, None, None
     image_size = conf['image_size']
     try:
@@ -128,41 +128,20 @@ def load_dataset(conf, save_np_to_mem, classifier_dir, test_on_query, label_path
         print("\rLoaded image {}/{}".format(num + 1, dataset_len), end="")
     print("")
     return train_images, train_labels, test_images, test_labels, img_list
-    # following 4 lines gave min_val = 0 and max_val = 497.75647 as used in get_max_val_fft
+    # following 4 lines gave min_val = 0 (unsurprisingly) and max_val = 497.75647 as used in transform
     # max_test = -1000 if percentage_train == 1 else np.max(test_images)
     # min_test = 1000 if percentage_train == 1 else np.min(test_images)
     # max_val = max(np.max(train_images), max_test)
     # min_val = min(np.min(train_images), min_test)
 
 
-class Augm_Sequence(Sequence):
-    # set y_set to None for test set
-    def __init__(self, x_set, y_set, batch_size, augmentations, shuffle=False):
-        self.x, self.y = x_set, y_set
-        self.batch_size = batch_size
-        self.augment = augmentations
-        self.shuffle = shuffle
-        self.indices = list(range(self.x.shape[0]))
-
-    def __len__(self):
-        return int(np.ceil(self.x.shape[0] / self.batch_size))
-
-    def __getitem__(self, idx):
-        max_idx = min(self.x.shape[0], (idx + 1)*self.batch_size)
-        batch_x = self.x[self.indices[idx * self.batch_size:max_idx]]
-        batch_x_to_look_at = batch_x[:, :, :, 0]
-        x_stacked = np.float32(np.stack([self.augment(image=x)["image"] for x in batch_x], axis=0))
-        if self.y is not None:
-            batch_y = self.y[self.indices[idx * self.batch_size:max_idx]]
-            return x_stacked, np.array(batch_y)
-        return x_stacked, None
-
-    def on_epoch_end(self):
-        if self.shuffle:
-            np.random.shuffle(self.indices)
-
-
 def get_latest_cp(checkpoint_dir, epoch=None):
+    """
+    Loads specific or last checkpoint of (alphabetically) last checkpoint sub directory
+    :param checkpoint_dir: directory containing all runs
+    :param epoch: (optional) checkpoint epoch number
+    :return: path to checkpoint
+    """
     if not os.path.exists(checkpoint_dir):
         return None
     list_dir = os.listdir(checkpoint_dir)
@@ -176,6 +155,10 @@ def get_latest_cp(checkpoint_dir, epoch=None):
 
 
 def get_epoch_and_path(path):
+    """
+    :param path: path to checkpoint
+    :return: epoch to corresponding path, and path
+    """
     if path is None:
         return 0, None
     filename = path.split("/")[-1]
@@ -184,6 +167,11 @@ def get_epoch_and_path(path):
 
 
 def get_specific_cp(checkpoint_dir):
+    """
+    If no checkpoint path was provided in the arguments, this method is called to retrieve the path.
+    :param checkpoint_dir: Path containing all runs
+    :return: epoch and path to checkpoint
+    """
     while True:
         user_input = input("Enter the path of checkpoint file or leave empty to use latest checkpoint.")
         if len(user_input) == 0:

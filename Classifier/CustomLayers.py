@@ -2,9 +2,12 @@
 
 These classes define custom layers for the CNN Classifier.
 
-This module contains the following classes:
+This module contains the following methods:
     #get_pad
     #getNormLayer
+    #get_custom_objects
+
+and the following classes:
     #ResBlock
     #Padder
     #Pixel_norm
@@ -16,6 +19,13 @@ from random import randint
 
 
 def get_pad(x, total_padding=0, training=True):
+    """
+    :param x: input tensor
+    :param total_padding: integer that may also be negative, in which case the input is sliced in its spatial dimensions
+    :param training: if True, x is randomly padded; if False, x is padded by total_padding//2 on one side and by the
+                     rest on the other side.
+    :return: padded tensor
+    """
     if total_padding == 0:
         return x
     elif total_padding > 0:
@@ -36,6 +46,12 @@ def get_pad(x, total_padding=0, training=True):
 
 
 def getNormLayer(norm_type='batch', momentum=0.9, epsilon=1e-5):
+    """
+    :param norm_type: 'batch' for BatchNorm, 'pixel' for PixelNorm and anything else for no norm
+    :param momentum: momentum for BatchNorm
+    :param epsilon: epsilon for Batch- and PixelNorm
+    :return: the specified norm layer
+    """
     if norm_type == 'pixel':
         return Pixel_norm(epsilon)
     if norm_type == 'batch':
@@ -44,7 +60,19 @@ def getNormLayer(norm_type='batch', momentum=0.9, epsilon=1e-5):
 
 
 class ResBlock(tf.keras.layers.Layer):
+    """
+    Block of combined convolutions including normalizations and non-linearities. It allows for a residual connection
+    between the input and the output.
+    """
     def __init__(self, conf, downsample, features, last_features, **kwargs):
+        """
+        :param conf: configuration of classifier model
+        :param downsample: bool whether to downsample input or not
+        :param features: number of feature maps used in convolutions
+        :param last_features: input's number of features (when using a residual connection and the features differ, the
+                              input has to be projected using a small convolution in order for the features to match)
+        :param kwargs: should contain the input dimensions
+        """
         super(ResBlock, self).__init__(**kwargs)
         self.conf = conf
         self.model = tf.keras.Sequential()
@@ -97,6 +125,10 @@ class ResBlock(tf.keras.layers.Layer):
 
 
 class Padder(tf.keras.layers.Layer):
+    """
+    Layer that pads its input with a total of padding in both height and width. E.g. an input of size bx125x125xc will
+    be padded to bx128x128xc when padding is set to 3.
+    """
     def __init__(self, padding=6, **kwargs):
         super(Padder, self).__init__(**kwargs)
         self.padding = padding
@@ -105,7 +137,6 @@ class Padder(tf.keras.layers.Layer):
         return get_pad(x, self.padding, training=training)
 
     def get_config(self):
-        #return {'padding': self.padding}
         config = {'padding': self.padding}
         base_config = super(Padder, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
@@ -122,12 +153,15 @@ class Padder(tf.keras.layers.Layer):
 
 
 class Pixel_norm(tf.keras.layers.Layer):
+    """
+    A different normalization layer than BatchNorm. Adopted from the project "Progressive Growing of GANs for Improved
+    Quality, Stability, and Variation" (https://github.com/tkarras/progressive_growing_of_gans).
+    """
     def __init__(self, epsilon=1e-8):
         super(Pixel_norm, self).__init__()
         self.epsilon = epsilon
 
     def call(self, x):
-        # print("input shape in pixel norm layer: {}".format(x.shape))
         return x * tf.math.rsqrt(tf.reduce_mean(tf.square(x), axis=1, keepdims=True) + self.epsilon)
 
     def get_config(self):
@@ -139,6 +173,9 @@ class Pixel_norm(tf.keras.layers.Layer):
 
 
 class FactorLayer(tf.keras.layers.Layer):
+    """
+    A layer that multiplies its input with factor.
+    """
     def __init__(self, factor):
         super(FactorLayer, self).__init__()
         self.factor = factor
@@ -155,6 +192,13 @@ class FactorLayer(tf.keras.layers.Layer):
 
 
 def get_custom_objects():
+    """
+    This is necessary for loading a keras model that contains custom layers. Use like so:
+    with open(model_path) as json_file:
+        json_config = json_file.read()
+    model = tf.keras.models.model_from_json(json_config, custom_objects=get_custom_objects())
+    :return: list of all custom layers defined in this module
+    """
     layers = [ResBlock, Padder, Pixel_norm, FactorLayer]
     return_dict = {}
     for layer in layers:
