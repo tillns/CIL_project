@@ -1,3 +1,20 @@
+"""
+The purpose of this module is to score either a single image or a whole directory containing images with the Random
+Forest as well as neural network classifier model.
+The necessary argument is:
+--path The complete path to either a loadable image or a directory containing loadable images
+Optional arguments are:
+--nn_path Complete path to a keras model checkpoint (ending with ".data-00000-of-00001")
+--rf_path Complete path to a Random Forest model (ending with ".sav")
+If not specified, default models are chosen.
+Following methods are implemented and may be used in other modules:
+    #load_rf_with_conf
+    #load_km_with_conf
+    #score_tensor_with_rf
+    #score_tensor_with_keras_model
+    #get_rf_and_km_img
+"""
+
 import os
 import yaml
 import tensorflow as tf
@@ -86,12 +103,20 @@ def score_tensor_with_keras_model(image_tensor, model, batch_size):
     return score_tensor
 
 
-def get_rf_and_km_img(img_path, res_for_rf, res_for_km, conf):
+def get_rf_and_km_img(img_path, res_for_rf, res_for_km, km_conf):
+    """
+    Prepares a single image to be scored by the Random Forest and neural network classifier
+    :param img_path: Complete path to a file loadable as image (such as png)
+    :param res_for_rf: image resolution used for the Random Forest classifier
+    :param res_for_km: image resolution used for the neural network classifier
+    :param km_conf: configuration array for the neural network classifier
+    :return: image prepared for Random Forest and image prepared for neural network, each in numpy format
+    """
     img = Image.open(img_path).resize((1000, 1000)).convert('L')
     img_rf = img.resize((res_for_rf, res_for_rf))
     img_np_rf = np.array(img_rf, dtype=np.float32).reshape((res_for_rf, res_for_rf))
     img_km = img.resize((res_for_km, res_for_km))
-    use_fft = ('use_fft' in conf and conf['use_fft'])
+    use_fft = ('use_fft' in km_conf and km_conf['use_fft'])
     img_np_km = km_transform(np.array(img_km, dtype=np.float32).reshape((res_for_km, res_for_km, 1)), use_fft=use_fft)
     return img_np_rf, img_np_km
 

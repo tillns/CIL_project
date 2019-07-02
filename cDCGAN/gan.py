@@ -181,7 +181,8 @@ def train_gan():
         epoch_logs = {'gen': {'gen_loss': gen_losses / num_train_it},
                       'dis': {'dis_loss': dis_losses / num_train_it}}
         save_new_cp = ((epoch + 1) % conf['period_to_save_cp'] == 0)
-        # only test dis on one randomly drawn batch of test data per epoch
+
+        # do validation every specified number of epochs
         if do_validation and (epoch + 1) % conf['period_for_val'] == 0:
             callbacks.call_begin_hook('test')
             dis_val_loss = 0
