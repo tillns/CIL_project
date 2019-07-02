@@ -7,6 +7,7 @@ Group: Galaxy Crusaders
 
 ## Requirements
 
+- jupyter
 - sklearn
 - joblib
 - pyyaml
@@ -15,6 +16,7 @@ Group: Galaxy Crusaders
 - cv2
 - pywt
 - cython
+- matplotlib
 
 After installing all requirements, head into the `utils/` folder and run `python setup.py build_ext -i`
 to compile the cython files there.
@@ -22,11 +24,19 @@ to compile the cython files there.
 ## Image generation task
 
 ### AE_plus_KMeans
+
 ### Adhoc_generator
-### Conditional-PixelCNN-decoder-master
+
+This adhoc method randomly places stars that it has detected from the given labelled images and
+places them randomly onto a black image. Open the notebook by heading into the `Adhoc_generator/`
+subdirectory, running `jupyter notebook` and opening `Adhoc.ipynb`.
+
 ### DCGAN
+
 ### GAN
+
 ### VAE_stars
+
 ### stars_extractor
 
 ## Similarity scorer task
@@ -43,6 +53,6 @@ will be created if it doesn't exist yet.
 
 All other options can be set in the config file.
 
-To train the model, head into the `RandomForest` directory and run:
+To train the model, head into the `RandomForest/` subdirectory and run:
 
     python random_forest.py --data-directory=/path/to/the/data/ --dump-directory=/path/to/dump/directory/
