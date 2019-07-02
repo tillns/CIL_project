@@ -24,7 +24,10 @@ def load_rf_with_conf(rf_path):
 
 
 def load_km_with_conf(ckpt_path):
+    if ckpt_path.endswith('.data-00000-of-00001'):
+        ckpt_path = ckpt_path[:-len('.data-00000-of-00001')]
     model_path = os.path.join("/".join(ckpt_path.split("/")[:-1]), "model_config.json")
+    # todo: remove
     sys.path.insert(2, os.path.join(os.path.dirname(ckpt_path), "code"))
 
     with open(os.path.join("/".join(ckpt_path.split("/")[:-1]), "config.yaml"), 'r') as stream:
