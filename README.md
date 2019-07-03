@@ -25,7 +25,6 @@ Group: Galaxy Crusaders
 
 ## Requirements
 
-- jupyter
 - sklearn
 - joblib
 - pyyaml
