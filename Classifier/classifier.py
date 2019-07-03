@@ -122,7 +122,7 @@ def get_model():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
-    parser.add_argument('-T', '--test_on_query', type=bool, default=False, help="Set to True to score query dataset.")
+    parser.add_argument('-T', '--test_on_query', type=bool, default=True, help="Set to True to score query dataset.")
     parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
                         help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
     parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
@@ -166,7 +166,6 @@ if __name__ == '__main__':
         global cp_dir_time
         cp_dir_time = os.path.dirname(specific_path)
         if specific_path is not None:
-            # model_path = os.path.join("/".join(specific_path.split("/")[:-1]), "model.h5")
             model_path = os.path.join("/".join(specific_path.split("/")[:-1]), "model_config.json")
             if not os.path.exists(model_path):
                 sys.exit("Couldn't locate model")
