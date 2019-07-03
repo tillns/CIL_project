@@ -19,21 +19,12 @@ import numpy as np
 import joblib
 import math
 import sys
-home_dir = os.path.expanduser("~")
-sys.path.insert(0, os.path.join(home_dir, "CIL_project/Classifier"))
-sys.path.insert(1, os.path.join(home_dir, "CIL_project/utils"))
+cil_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(cil_dir, "Classifier"))
+sys.path.insert(1, os.path.join(cil_dir, "utils"))
 from CustomLayers import get_custom_objects
 from utils import transform as km_transform
 from roi_utils import roi_histograms
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--path', type=str, default=None,
-                    help='Whole path to dir with images or path to individual image.')
-parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/reference_run/"
-                    "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
-                    help='Whole path to nn checkpoint file ending with .data-00001....')
-parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "/home/tillns/CIL_project/RandomForest/"
-                    "final_model/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
 
 
 def load_rf_with_conf(rf_path):
@@ -104,7 +95,7 @@ def score_tensor_with_keras_model(image_tensor, model, batch_size):
     """
 
     score_list = []
-    for it in range(math.ceil(image_tensor.shape[0]/batch_size)):
+    for it in range(int(math.ceil(image_tensor.shape[0]/batch_size))):
         x_ = image_tensor[it*batch_size:min((it+1)*batch_size, image_tensor.shape[0])]
         score_list.append(model(x_, training=False).numpy())
     score_tensor = np.concatenate(score_list)
@@ -131,6 +122,14 @@ def get_rf_and_km_img(img_path, res_for_rf, res_for_km, km_conf):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', type=str, default=None,
+                        help='Whole path to dir with images or path to individual image.')
+    parser.add_argument('--nn_path', type=str, default=os.path.join(cil_dir, "Classifier/reference_run/"
+                        "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
+                        help='Whole path to nn checkpoint file ending with .data-00001....')
+    parser.add_argument('--rf_path', type=str, default=os.path.join(cil_dir, "RandomForest/"
+                        "final_model/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
     args = parser.parse_args()
 
     if args.path is None:
