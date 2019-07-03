@@ -1,43 +1,44 @@
-# general conf
-image_size: 28
-image_channels: 1
+# General configuration
+image_size: 28  # use 28 for patches
+image_channels: 1  # keep at 1
 vmin: -1
-vmax: 1  # use either -1 and 1 or 0 and 1
-percentage_train: 0.9  # validation doesn't work with star patches yet
-#val_model_kind: rf  # nn for neural network or rf for random forest
-period_to_save_cp: 40
-period_for_val: 5
-num_epochs: 400
-batch_size: 200
-lr: 0.0001
-lr_decay: 0.00  # experiment
-gan_loss: lsgan
+vmax: 1  # image range; use either -1 and 1 or 0 and 1
+percentage_train: 0.9  # use e.g. 0.9 to use 90% of the images for training and 10% for validation
+period_to_save_cp: 40  # every period_to_save_cp epochs, a checkpoint is saved
+period_for_val: 5  # every period_for_val epochs, validation is performed
+num_epochs: 400  # total number of epochs
+batch_size: 200  # adjust if GPU reaches its memory limits
+lr: 0.0001  # initial learning rate
+lr_decay: 0  # learning rate decay per epoch
+gan_loss: lsgan  # lsgan or anything else
+# path to neural network classifier checkpoint relative to the Classifier directory
 nn_val_model_path: reference_run/fft_4convs_8features_MAE/cp-0140.ckpt
+# path to Random Forest classifier model relative to the RandomForest directory
 rf_val_model_path: final_model/random_forest_96_1.pkl
-num_val_images: 100
-conditional: False
+num_val_images: 100  # number of validation images to create with the generator (only relevant for star patches)
+conditional: False  # whether to use conditional DCGAN or not
 
-# general model conf
+# General model configuration. Not every configuration is used in every model kind.
+model_kind: 4  # 1 or 2 for full-sized images, 3 for uncoditional 28x28 patches, 4 for conditional 28x28 patches
+num_convs_per_res: 1 # number of convolutions per resolution
+kernel: 5  # kernel size for convolutions; 5 in tf DCGAN tutorial.
+features: 4  # starting number of feature maps for convolutions
+max_features: 128  # maximum number of feature maps for convolutions. 128 in tf DCGAN tutorial.
+norm_type: batch  # batch, pixel or anything else
+min_res: 4  # minimum resolution, the convolutions downsample to
+lrelu_alpha: 0.2  # slope for negative values in the leaky ReLU
+weight_reg_kind: l2  # l1 or l2
+weight_reg_factor: 0  # mostly kept at 0
+ratio_gen_dis: 1  # integer, specifies step number the generator takes per discriminator step. 1 in tf DCGAN tutorial.
 
-model_kind: 3
-num_convs_per_res: 1
-kernel: 5  # 5 in tf DCGAN
-features: 4
-max_features: 128  # 128 in tf DCGAN
-norm_type: batch
-min_res: 4
-lrelu_alpha: 0.2
-weight_reg_kind: l2
-weight_reg_factor: 0
-ratio_gen_dis: 1  # 1 in tf DCGAN
-# special generator and discriminator conf
-dis:
-  strided_conv: True  # True in tf DCGAN
-  num_dense_layers: 2
-  dropout: 0.3  # 0.3 in tf DCGAN
-  use_bias: True  # True in tf DCGAN
+dis:  # special configurations for discriminator
+  strided_conv: True  # Whether to downsample with strided convolutions or MaxPooling. True in tf DCGAN tutorial.
+  num_dense_layers: 2  # number of dense layers in the end
+  dropout: 0.3  # Dropout rate between certain layers. 0.3 in tf DCGAN tutorial.
+  use_bias: True  # Whether to use bias for all layers. True in tf DCGAN tutorial.
 
-gen:
-  transp_conv: False  # True in tf DCGAN
-  use_bias: False  # False in tf DCGAN
-  input_neurons: 100  # 100 in tf DCGAN
+gen: # special configurations for generator
+  # whether to upscale with transposed convolutions or nn upsample. True in tf DCGAN tutorial, but False in final model.
+  transp_conv: False
+  use_bias: False  # Whether to use bias for all layers. False in tf DCGAN tutorial.
+  input_neurons: 100  # Size of latent code that's input into the generator. 100 in tf DCGAN tutorial.
