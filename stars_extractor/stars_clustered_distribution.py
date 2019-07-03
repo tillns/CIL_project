@@ -4,83 +4,47 @@ distribution and measures mean and std of every kind of star. For image generati
 integeres >= 0 is required. Hence, this file approximates a fitting distribution iteratively. The resulting numbers
 may be used for the complete image creator in the GAN project.
 
-Takes as input --unclustered_stars_dir the directory containing directly the star patch images; --clustered_stars_dir
-the directory containing the cluster folders each containing their star patch images (Note that these images MUST come
-from the unclustered directory. The clustering may be achieved with the AE_plus_Kmeans project.); --precision relative
-precision for approximation (the lower, the longer it will take).
+Takes as arguments:
+required:
+--unclustered_stars_dir the directory containing directly the star patch images
+--clustered_stars_dir the directory containing the cluster folders each containing their star patch images (Note that
+these images MUST come from the unclustered directory. The clustering may be achieved with the AE_plus_Kmeans project.)
+optional:
+--precision relative precision for distribution approximation (the lower, the longer it will take).
 """
 
 import os
+import sys
 import glob
 import numpy as np
 import argparse
-
-# TODO remove hard coded paths and add help and required flags
-home_dir = os.path.expanduser("~")
-parser = argparse.ArgumentParser()
-parser.add_argument('--unclustered_stars_dir', type=str, default=os.path.join(home_dir,
-                    "CIL_project/extracted_stars/labeled1_and_scoredover3"))
-parser.add_argument('--clustered_stars_dir', type=str, default=os.path.join(home_dir,
-                    "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats"))
-parser.add_argument('--precision', type=float, default=0.05, help="Precision for approximation.")
-
-def get_mean(some_list):
-    return sum(some_list)/len(some_list)
+cil_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(cil_dir, "cDCGAN"))
+from create_complete_images import round_pos_int, get_classes_dict
 
 
-def get_std(some_list):
-    sq_sum = 0
-    mean = get_mean(some_list)
-    for el in some_list:
-        sq_sum += pow(el-mean, 2)
-    return np.sqrt(sq_sum/(len(some_list)-1))
-
-
-def find_arg_of_dir(dir):
+def find_arg_of_dir(directory):
+    """
+    :param directory: Directory that belongs to one of the categories
+    :return: argument (number) of the directory
+    """
     for num_cat, cat in enumerate(categories):
         cat = os.path.join(clustered_stars_dir, cat)
-        if cat == dir:
+        if cat == directory:
             return num_cat
-
-
-def get_classes_dict(kind='int'):
-    dict_to_return = {}
-    for i in range(num_classes):
-        dict_to_return[i] = 0 if kind == 'int' else []
-    return dict_to_return
-
-
-def round_pos_int(some_decimal):
-    if some_decimal < 0:
-        return 0
-    if some_decimal - int(some_decimal) < 0.5:
-        return int(some_decimal)
-    return int(some_decimal) + 1
 
 
 def find_good_distr_approx_iteratively(mean, std, precision=0.05):
     """ Iteratively approximates a good gaussian distribution that only contains integers >= 0 to the measured mean and
     standard deviation up to a set precision.
 
-
-    Parameters
-    ----------
-    mean: integer
-        measured mean of number of stars of specific kind in an image
-
-    std: integer
-        measured standard deviation of number of stars of specific kind in an image
-
-
-    Returns
-    -------
-    mean: integer
-        approximated mean of number of stars of specific kind in an image
-
-    std: integer
-        approximated standard deviation of number of stars of specific kind in an image
-
-    These numbers may equal the input if they already approximate well enough (within the set precision).
+    :param mean: float, measured mean of number of stars of specific kind in an image
+    :param std: float, measured standard deviation of number of stars of specific kind in an image
+    :param precision: float, relative precision for distribution approximation (the lower, the longer it will take)
+    :return: mean, float, approximated mean of number of stars of specific kind in an image;
+             std, float, approximated standard deviation of number of stars of specific kind in an image
+             (These numbers may equal the input if they already approximate the distribution well enough within the set
+             precision).
     """
 
     current_mean = mean
@@ -91,8 +55,8 @@ def find_good_distr_approx_iteratively(mean, std, precision=0.05):
         list_rand = []
         for i in range(100000):
             list_rand.append(round_pos_int(np.random.normal(current_mean, current_std)))
-        result_mean = get_mean(list_rand)
-        result_std = get_std(list_rand)
+        result_mean = np.mean(list_rand)
+        result_std = np.std(list_rand)
         if np.abs(1-result_mean/mean) < precision and np.abs(1-result_std/std) < precision:
             return current_mean, current_std
         if std_mode and result_std > std:
@@ -109,6 +73,13 @@ def find_good_distr_approx_iteratively(mean, std, precision=0.05):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unclustered_stars_dir', type=str, required=True, help="Directory that directly contains the "
+                        "unclustered extracted star patches")
+    parser.add_argument('--clustered_stars_dir', type=str, required=True, help="Directory that contains the cluster "
+                        "folders which contain the corresponding extracted star patches, which have to match with the "
+                        "unclustered ones")
+    parser.add_argument('--precision', type=float, default=0.05, help="Precision for approximation.")
     args = parser.parse_args()
     unclustered_stars_dir = args.unclustered_stars_dir
     clustered_stars_dir = args.clustered_stars_dir
@@ -118,7 +89,7 @@ if __name__ == '__main__':
     num_stars_per_img_per_cat = {}
     for file_name in sorted(os.listdir(unclustered_stars_dir)):
         full_img_name = file_name.split("_")[0]
-        if not full_img_name in num_stars_per_img_per_cat:
+        if full_img_name not in num_stars_per_img_per_cat:
             num_stars_per_img_per_cat[full_img_name] = get_classes_dict()
         file_list = glob.glob(os.path.join(clustered_stars_dir, "*/{}".format(file_name)))
         label = find_arg_of_dir(os.path.dirname(file_list[0]))
@@ -134,14 +105,14 @@ if __name__ == '__main__':
         list_per_star.append(num_stars)
 
     for cat_key in list_per_cat:
-        print("Distribution of stars for cat {}: {} +- {}". format(cat_key, get_mean(list_per_cat[cat_key]),
-                                                                   get_std(list_per_cat[cat_key])))
-    print("Num stars per image: {} +- {}".format(get_mean(list_per_star), get_std(list_per_star)))
+        print("Distribution of stars for cat {}: {} +- {}". format(cat_key, np.mean(list_per_cat[cat_key]),
+                                                                   np.std(list_per_cat[cat_key])))
+    print("Num stars per image: {} +- {}".format(np.mean(list_per_star), np.std(list_per_star)))
 
     distr_per_cat = get_classes_dict()
     new_distr_per_cat = get_classes_dict()
     for cat_key in list_per_cat:
-        distr_per_cat[cat_key] = (get_mean(list_per_cat[cat_key]), get_std(list_per_cat[cat_key]))
+        distr_per_cat[cat_key] = (np.mean(list_per_cat[cat_key]), np.std(list_per_cat[cat_key]))
         new_distr_per_cat[cat_key] = find_good_distr_approx_iteratively(distr_per_cat[cat_key][0],
                                                                         distr_per_cat[cat_key][1], args.precision)
         print("Adjusted distribution for cat {}: ({}, {})".format(cat_key, new_distr_per_cat[cat_key][0],
@@ -159,9 +130,8 @@ if __name__ == '__main__':
             list_measured_num_stars[i] += list_rand[cat_key][i]
 
     for cat_key in list_rand:
-        print("New Measured distr for cat {}: {} +- {}".format(cat_key, get_mean(list_rand[cat_key]),
-                                                               get_std(list_rand[cat_key])))
+        print("New Measured distr for cat {}: {} +- {}".format(cat_key, np.mean(list_rand[cat_key]),
+                                                               np.std(list_rand[cat_key])))
 
-
-    print("New measured num stars per image: {} +- {}".format(get_mean(list_measured_num_stars),
-                                                              get_std(list_measured_num_stars)))
+    print("New measured num stars per image: {} +- {}".format(np.mean(list_measured_num_stars),
+                                                              np.std(list_measured_num_stars)))

@@ -1,26 +1,29 @@
 """
-Save either those stars labeled 1 or those scored over a threshoold to a separate directory. Input --kind is 'scored'
-or 'labeled', --scored_thresh the threshold (only needed for scored images), --target_dir directory to save images that
-fulfill the criteria.
+Save either those stars labeled 1 or those scored over a threshoold to a separate directory. The module takes the
+following arguments:
+required:
+--dataset_dir path to cosmology_aux_data_170429 directory
+--target_dir directory to save images that fulfill the criteria.
+optional:
+--kind is 'scored' or 'labeled'
+--scored_thresh the threshold (only needed for scored images)
+
 """
 
 import os
 import sys
 import argparse
 
-home_dir = os.path.expanduser("~")
-parser = argparse.ArgumentParser()
-parser.add_argument('--kind', type=str, default="scored", help="'scored' or 'labeled'")
-parser.add_argument('--scored_thresh', type=float, default=3, help="For scored images, "
-                                                                   "only save those >= this threshold")
-# TODO remove hardcoded path, add help and required flag
-parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir,
-                    "dataset/cil-cosmology-2018/cosmology_aux_data_170429/mytest"))
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--kind', type=str, default="scored", help="'scored' or 'labeled'")
+    parser.add_argument('--scored_thresh', type=float, default=3, help="For scored images, "
+                                                                       "only save those >= this threshold")
+    parser.add_argument('--dataset_dir', type='str', required=True, help="Path to cosmology_aux_data_170429 directory.")
+    parser.add_argument('--target_dir', type=str, required=True, help="Directory in which to save fitting stars.")
     args = parser.parse_args()
-    image_dir = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/{}".format(args.kind))
-    label_path = os.path.join(home_dir, "dataset/cil-cosmology-2018/cosmology_aux_data_170429/{}.csv".format(args.kind))
+    image_dir = "{}/{}".format(args.dataset_dir, args.kind)
+    label_path = "{}/{}.csv".format(args.dataset_dir, args.kind)
     new_image_directory = args.target_dir
     if not os.path.exists(new_image_directory):
         os.makedirs(new_image_directory)

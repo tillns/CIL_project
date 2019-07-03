@@ -14,33 +14,14 @@ import cv2
 import argparse
 from stars_clustered_distribution import get_mean, get_std
 
-home_dir = os.path.expanduser("~")
-parser = argparse.ArgumentParser()
-# TODO remove hard coded paths and add help and required flags
-parser.add_argument('--img_dir', type=str, default=os.path.join(home_dir,
-                    "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3"))
-parser.add_argument('--target_dir', type=str, default=os.path.join(home_dir,
-                    "CIL_project/extracted_stars/labeled1_and_scoredover3"))
-
 
 def _extract_stars_28x28(image):
-    """ Extracts stars from an image
-
-    Detects all stars within the given image, extracts them and centers them within patches of size 28x28 with a black
-    background.
-
-
-    Parameters
-    ----------
-    image : np.ndarray
-        The image from which the stars are extracted. The dimensions of the image are assumed to be 1000x1000. The
-        image is assumed to be grayscale.
-
-
-    Returns
-    -------
-    patches : list
-        A list containing the resulting 28x28 patches.
+    """
+    Extracts stars from an image. Detects all stars within the given image, extracts them and centers them within
+    patches of size 28x28 with a black background.
+    :param image: np.ndarray, the image from which the stars are extracted. The dimensions of the image are assumed to
+    be 1000x1000. The image is assumed to be grayscale.
+    :return: patches, A list containing the resulting 28x28 patches.
     """
 
     _, image_binary = cv2.threshold(image, 1, 255, cv2.THRESH_BINARY)
@@ -56,12 +37,12 @@ def _extract_stars_28x28(image):
 
     for r in bounding_rects_filtered:
 
-        x = r[0];
-        y = r[1];
-        w = r[2];
+        x = r[0]
+        y = r[1]
+        w = r[2]
         h = r[3]
 
-        if (w > 28 or h > 28):  # first filter
+        if w > 28 or h > 28:  # first filter
             continue
 
         star = image[y: y + h, x: x + w]
@@ -82,6 +63,11 @@ def _extract_stars_28x28(image):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--img_dir', type=str, required=True, help="Folder that contains the complete "
+                                                                   "images from which the stars shall be extracted.")
+    parser.add_argument('--target_dir', type=str, required=True, help="Folder where extracted star patches shall be "
+                                                                      "saved.")
     args = parser.parse_args()
 
     img_dir = args.img_dir

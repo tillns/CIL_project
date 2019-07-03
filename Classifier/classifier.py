@@ -26,7 +26,7 @@ parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
                     help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
 parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
                     "Complete path to ckpt file ending with .data_00001...")
-parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to cosmology_aux_data_170429 dir", required=True)
+parser.add_argument("--dataset_dir", type=str, required=True, help="Complete path to cosmology_aux_data_170429 dir")
 
 
 class CrossEntropy(tf.keras.losses.Loss):

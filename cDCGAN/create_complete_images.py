@@ -21,7 +21,7 @@ import pickle
 import numpy as np
 import tensorflow as tf
 import argparse
-from random import gauss, randint
+from random import randint
 import matplotlib.pyplot as plt
 from img_scorer import score_tensor_with_rf, score_tensor_with_keras_model, load_rf_with_conf, load_km_with_conf, km_transform
 from gan_utils import one_hot, detransform_norm
