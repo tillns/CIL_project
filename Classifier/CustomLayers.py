@@ -2,7 +2,7 @@
 
 These classes define custom layers for the CNN Classifier.
 
-This module contains the following methods:
+This module contains the following public functions:
     #get_pad
     #getNormLayer
     #get_custom_objects

@@ -24,9 +24,6 @@ from CustomCallbacks import CallbackList
 from gan_utils import load_dataset, generate_and_save_images, detransform_norm
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # disables some annoying tensorflow warnings
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to directory containing images or "
-                                                                  "image class folders with corresponding images")
 
 def discriminator_loss(real_logits, fake_logits, conf):
     """
@@ -281,4 +278,7 @@ def train_gan(args):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_dir", type=str, default=None, help="Complete path to directory containing images or "
+                                                                      "image class folders with corresponding images")
     train_gan(parser.parse_args())

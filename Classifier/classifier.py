@@ -2,6 +2,11 @@
 
 This is the project's main module. You can use it to train a neural network classifier with tensorflow keras. Edit the
 network's configurations in config.yaml. It may also be used to predict a score for the given query set.
+Following public functions are implemented:
+    #get_model
+Following classes are implemented:
+    #CrossEntropy
+    #CustomLoss
 
 """
 
