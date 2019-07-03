@@ -2,6 +2,15 @@
 
 This is the project's main module. You can use it to train a neural network classifier with tensorflow keras. Edit the
 network's configurations in config.yaml. It may also be used to predict a score for the given query set.
+It takes as arguments:
+required:
+--dataset_dir Complete path to cosmology_aux_data_170429 directory
+optional:
+--is_cluster Set to true if code runs on cluster.
+--test_on_query Set to True to score query dataset.
+--restore_ckpt Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True
+--ckpt_path Complete path to ckpt file ending with .data-00000-of-00001
+
 Following public functions are implemented:
     #get_model
 Following classes are implemented:
@@ -26,11 +35,11 @@ from utils import get_epoch_and_path, get_specific_cp, load_dataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
-parser.add_argument('-T', '--test_on_query', type=bool, default=False)
+parser.add_argument('-T', '--test_on_query', type=bool, default=False, help="Set to True to score query dataset.")
 parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
                     help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
 parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
-                    "Complete path to ckpt file ending with .data_00001...")
+                    "Complete path to ckpt file ending with .data-00000-of-00001")
 parser.add_argument("--dataset_dir", type=str, required=True, help="Complete path to cosmology_aux_data_170429 dir")
 
 

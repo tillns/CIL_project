@@ -11,6 +11,8 @@ required:
 these images MUST come from the unclustered directory. The clustering may be achieved with the AE_plus_Kmeans project.)
 optional:
 --precision relative precision for distribution approximation (the lower, the longer it will take).
+
+Implements
 """
 
 import os
