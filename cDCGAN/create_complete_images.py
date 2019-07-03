@@ -26,21 +26,6 @@ import matplotlib.pyplot as plt
 from img_scorer import score_tensor_with_rf, score_tensor_with_keras_model, load_rf_with_conf, load_km_with_conf, km_transform
 from gan_utils import one_hot, detransform_norm
 
-home_dir = os.path.expanduser("~")
-parser = argparse.ArgumentParser()
-parser.add_argument('-C', '--checkpoint_path', type=str, default=os.path.join(home_dir,
-                    "CIL_project/cDCGAN/checkpoints/advanced_upsampling2d/cp_gen_epoch185.data-00000-of-00001"),
-                    help='Whole path to checkpoint file ending with data-00000-of-00001')
-parser.add_argument('--nn_path', type=str, default=os.path.join(home_dir, "CIL_project/Classifier/reference_run/"
-                    "fft_4convs_8features_MAE/cp-0140.ckpt"),
-                    help='Whole path to classfier nn checkpoint file ending with .data-00001....')
-parser.add_argument('--rf_path', type=str, default=os.path.join(home_dir, "CIL_project/RandomForest/final_model/"
-                    "random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
-parser.add_argument('-f', '--find_best_num_stars_per_image', type=bool, default=True, help="TODO")
-parser.add_argument('--min_score', type=float, default=2.9486,
-                    # 2.9486 is the highest mean score found after 2000 iterations
-                    help="Don't save latents and images for scores below min_score.")
-
 
 image_channels = 1
 image_size = 1000
@@ -100,17 +85,16 @@ def get_classes_dict(num_classes, kind='int'):
 def save_obj(obj, name):
     """
     Save an obj in the current directory as name.pkl
-
-    TODO :params
+    :param obj: object to save
+    :param name: name to be used to save the object in the current directory as pkl
     """
-
     with open(name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
 def load_obj(name):
     """
-    TODO :params
+    :param name: name of the object to be loaded
     :return: loaded obj in the current directory called name.pkl
     """
 
@@ -197,7 +181,7 @@ def create_complete_images(gen_model, vmin=0, num_images_to_create=100, num_clas
                         star_patch_size // 2:star_patch_size // 2 + image_size], latents_per_pic, stars_pos
 
 
-def find_and_save_best_setting(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf, best_score):
+def find_and_save_good_setting(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf, best_score):
     """
     Loops infinitely to find best latent and pos setting for given model.
     :param gen_model: generative model that produces star patches (conditional or unconditional)
@@ -211,7 +195,7 @@ def find_and_save_best_setting(gen_model, conf, num_classes, rf_model, rf_conf, 
     """
 
     counter = 0
-    img_save_dir = os.path.join(home_dir, "CIL_project/cDCGAN/compl_images_{}".format(num_classes))
+    img_save_dir = os.path.join(cil_dir, "cDCGAN/compl_images_{}".format(num_classes))
     while True:
         rf_score, nn_score, image_tensor, latents_per_pic, stars_pos \
             = create_and_score_images(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf,
@@ -267,8 +251,8 @@ def main(args):
     num_classes = 1 if not conf['conditional'] else gen_model.input[1].shape[1]
     km_model, km_conf = load_km_with_conf(args.nn_path)
     rf_model, rf_conf = load_rf_with_conf(args.rf_path)
-    if args.find_best_num_stars_per_image:
-        find_and_save_best_setting(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf, args.min_score)
+    if args.find_good_latents:
+        find_and_save_good_setting(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf, args.min_score)
     else:
         rf_score, km_score, _, _, _ = create_and_score_images(gen_model, conf, num_classes, rf_model, rf_conf, km_model,
                                                               km_conf, load_dict=True)
@@ -279,5 +263,21 @@ def main(args):
 
 
 if __name__ == '__main__':
-    args = parser.parse_args()
-    main(args)
+    cil_dir = os.path.dirname(os.path.dirname(__file__))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-C', '--checkpoint_path', type=str, default=os.path.join(cil_dir,
+                        "cDCGAN/checkpoints/advanced_upsampling2d/cp_gen_epoch185.data-00000-of-00001"),
+                        help='Whole path to checkpoint file ending with data-00000-of-00001')
+    parser.add_argument('--nn_path', type=str, default=os.path.join(cil_dir, "Classifier/reference_run/"
+                        "fft_4convs_8features_MAE/cp-0140.ckpt"),
+                        help='Whole path to classfier nn checkpoint file ending with .data-00001....')
+    parser.add_argument('--rf_path', type=str, default=os.path.join(cil_dir, "RandomForest/final_model/"
+                        "random_forest_96_1.pkl"),
+                        help='Whole path rf model (.pkl)')
+    parser.add_argument('-f', '--find_good_latents', type=bool, default=True, help="True: Loop infinitely to find good "
+                        "random latents and poisitions for the generated images. False: Create one set of images and "
+                        "score it.")
+    parser.add_argument('--min_score', type=float, default=2.9486,
+                        # 2.9486 is the highest mean score found after 2000 iterations
+                        help="Don't save latents and images for scores below min_score.")
+    main(parser.parse_args())
