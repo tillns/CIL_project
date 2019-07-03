@@ -1,30 +1,29 @@
 # general conf
-image_size: 1000
-percentage_train: 0.8
-max_elements: 9600
-period_to_save_cp: 5
-num_epochs_for_lin_regression: 40
-tot_num_epochs: 400
-batch_size: 40
-lr: 0.001
+image_size: 1000  # original size is 1000
+percentage_train: 0.8  # e.g. 0.8 to use 80% for training and 20% for validation
+period_to_save_cp: 5  # save checkpoint every period_to_save_cp epochs if no validation is used
+num_epochs_for_lin_regression: 40  # period to check for early stopping
+tot_num_epochs: 400  # max number of epochs if not stopped early
+batch_size: 40  # adjust if GPU hits its limits
+lr: 0.001  # initial learning rate
 train_loss_type: MAE  # CE, MSE or MAE
 val_loss_type: MAE # same choice, but should be kept constant (MSE) for all configs
-use_fft: True
+use_fft: True  # preprocess data with FFT
 
 # model conf
-residual: False
-num_convs_per_block: 4
-num_blocks_per_res: 1
-downsample_factor: 2
-use_max_pool: False
-downsample_with_first_conv: True
-num_dense_layers: 1
-latent_features: 64
-kernel: 3
-features: 8
-max_features: 32
-norm_type: batch  # batch, pixel or None (couldn't find instance norm)
-min_res: 4
-lrelu_alpha: 0.2
-use_bias: False
-dropout: 0.3
+residual: False  # use residual connections between blocks
+num_convs_per_block: 4  # number of convolutions per block (that might have residual connection)
+num_blocks_per_res: 1  # number of blocks per resolution
+downsample_factor: 2  # downsample spatial resolutions by this factor
+use_max_pool: False  # downsample with maxPooling or strided convolution
+downsample_with_first_conv: True  # use first or last convolution to downsample per resolution
+num_dense_layers: 1  # number of dense layers in the end
+latent_features: 64  # number of dense features (only necessary for more than 1 dense layer)
+kernel: 3  # kernel size for convolutions
+features: 8  # starting number of feature maps in convolutions (raised by 2 every resolution downsample)
+max_features: 32  # maximum number of feature maps in convolutions
+norm_type: batch  # batch, pixel or None
+min_res: 4  # Minimum spatial resolutions in convolutions. Afterwards, dense layers are applied.
+lrelu_alpha: 0.2  # alpha value (slope for negative values) in leaky ReLU
+use_bias: False  # whether to use a bias for all layers
+dropout: 0.3  # dropout rate before dense layers
