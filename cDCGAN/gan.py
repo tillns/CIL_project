@@ -1,7 +1,11 @@
 """
 This is the main module of this project. It trains a conditional or unconditional DCGAN on either the (clustered)
 star patches or the whole images. No arguments are required. Edit the necessary configuration in config.yaml.
-Following methods are implemented:
+It takes the following arguments:
+optional:
+--dataset_dir Complete path to directory containing images or image class folders with corresponding images
+
+Following public functions are implemented:
     #discriminator_loss
     #generator_loss
     #train_step

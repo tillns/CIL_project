@@ -1,8 +1,12 @@
 """
 The purpose of this module is to score either a single image or a whole directory containing images with the Random
 Forest as well as neural network classifier model.
+This module takes the following arguments:
+--path Whole path to dir with images or path to individual image.
+--nn_path Whole path to nn checkpoint file ending with .data-00000-of-00001
+--rf_path Whole path rf model (.pkl)
 
-Following methods are implemented and may be used in other modules:
+Following public functions are implemented:
     #load_rf_with_conf
     #load_km_with_conf
     #score_tensor_with_rf
@@ -127,7 +131,7 @@ if __name__ == '__main__':
                         help='Whole path to dir with images or path to individual image.')
     parser.add_argument('--nn_path', type=str, default=os.path.join(cil_dir, "Classifier/reference_run/"
                         "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
-                        help='Whole path to nn checkpoint file ending with .data-00001....')
+                        help='Whole path to nn checkpoint file ending with .data-00000-of-00001')
     parser.add_argument('--rf_path', type=str, default=os.path.join(cil_dir, "RandomForest/"
                         "final_model/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
     args = parser.parse_args()
