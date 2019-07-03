@@ -188,14 +188,16 @@ if __name__ == '__main__':
     print('Finding lower and upper bound for number of stars...')
     min_stars, max_stars = find_num_stars(data)
 
-    if not os.path.exists("./Images/"):
-        os.mkdir("./Images/")
+    # create output directory
+    out_dir = "./images/Adhoc_generated_images"
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
 
     # generate images
     print('Generating images...')
     for i in range(100):
         new_img = generate_image(data, min_stars, max_stars)
-        cv2.imwrite( "./Images/" + repr(i) + ".jpg", new_img );
+        cv2.imwrite(os.path.join(out_dir, repr(i) + ".jpg"), new_img );
         if i == 99:
             print('\r\tGenerated images ' + repr(i+1) + '/100')
         else:

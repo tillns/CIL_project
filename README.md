@@ -53,8 +53,11 @@ This project only contains some scripts to extract stars from the original image
 ### Adhoc_generator
 
 This adhoc method randomly places stars that it has detected from the given labelled images and
-places them randomly onto a black image. Open the notebook by heading into the `Adhoc_generator/`
-subdirectory, running `jupyter notebook` and opening `Adhoc.ipynb`.
+places them randomly onto a black image.
+
+##### Generation
+`python ./Adhoc_generator/Adhoc.py --data_path=/path/to/data`
+
 
 ### DCGAN
 
