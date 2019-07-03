@@ -1,8 +1,8 @@
 import tensorflow as tf
 import os
 import sys
-home_dir = os.path.expanduser("~")
-sys.path.insert(0, os.path.join(home_dir, "CIL_project/Classifier"))
+cil_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(cil_dir, "Classifier"))
 from CustomLayers import Padder, getNormLayer, get_custom_objects
 
 
