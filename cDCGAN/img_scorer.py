@@ -2,6 +2,7 @@
 The purpose of this module is to score either a single image or a whole directory containing images with the Random
 Forest as well as neural network classifier model.
 This module takes the following arguments:
+optional
 --path Whole path to dir with images or path to individual image.
 --nn_path Whole path to nn checkpoint file ending with .data-00000-of-00001
 --rf_path Whole path rf model (.pkl)

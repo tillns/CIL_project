@@ -1,9 +1,15 @@
 """ Stars Extractor
+Goes through specified directory, finds star patches in images, centers them and saves in another directory. It also
+prints some basic numbers concerning distribution of the stars.
 
-Takes as input --img_dir a directory containing the 1000x1000 star images. You may use
-create_dir_for_labeled_star_images.py to create a directory with only fitting images (without the low-score ones).
-The second input --target_dir specifies where to save the 28x28 extracted star patches. It also prints some basic
-numbers concerning distribution of the stars.
+Takes as arguments
+required:
+--img_dir a directory containing the 1000x1000 star images. You may use create_dir_for_labeled_star_images.py to create
+          a directory with only fitting images (without the low-score ones).
+--target_dir specifies where to save the 28x28 extracted star patches.
+
+Implements the following private functions:
+    #_extract_stars_28x28
 """
 
 import os

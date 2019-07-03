@@ -12,7 +12,9 @@ these images MUST come from the unclustered directory. The clustering may be ach
 optional:
 --precision relative precision for distribution approximation (the lower, the longer it will take).
 
-Implements
+Implements public functions:
+    #find_arg_of_dir
+    #find_good_distr_approx_iteratively
 """
 
 import os
