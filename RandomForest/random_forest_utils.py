@@ -19,8 +19,8 @@ import cv2
 import math
 import yaml
 import pywt
-home_dir = os.path.expanduser("~")
-sys.path.insert(0, os.path.join(home_dir, "CIL_project/utils"))
+cil_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(cil_dir, "utils"))
 from roi_utils import roi_histograms
 
 def get_train_and_test_data(data_directory, num_features, split_ratio, num_imgs_to_load):
