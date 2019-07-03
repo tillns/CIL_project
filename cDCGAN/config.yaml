@@ -12,11 +12,11 @@ lr: 0.0001  # initial learning rate
 lr_decay: 0  # learning rate decay per epoch
 gan_loss: lsgan  # lsgan or anything else
 # path to neural network classifier checkpoint relative to the Classifier directory
-nn_val_model_path: reference_run/fft_4convs_8features_MAE/cp-0140.ckpt
+nn_val_model_path: reference_run/cp-0140.ckpt
 # path to Random Forest classifier model relative to the RandomForest directory
-rf_val_model_path: final_model/random_forest_96_1.pkl
+rf_val_model_path: reference_run/random_forest_96_1.pkl
 num_val_images: 100  # number of validation images to create with the generator (only relevant for star patches)
-conditional: False  # whether to use conditional DCGAN or not
+conditional: True  # whether to use conditional DCGAN or not
 
 # General model configuration. Not every configuration is used in every model kind.
 model_kind: 4  # 1 or 2 for full-sized images, 3 for uncoditional 28x28 patches, 4 for conditional 28x28 patches

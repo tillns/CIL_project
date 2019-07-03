@@ -6,7 +6,14 @@ from autoencoder import *
 from utils import *
 import os
 
+
 def train(conf, data, labels=None):
+    """
+    Adjusted a little bit.
+    :param conf: configuration
+    :param data: images
+    :param labels: None for unconditional, labels for conditional
+    """
     X = tf.placeholder(tf.float32, shape=[None, conf.img_height, conf.img_width, conf.channel])
     model = PixelCNN(X, conf)
 
@@ -47,9 +54,27 @@ def train(conf, data, labels=None):
 
 
 def transform(numpy_image_array, vmin=0, vmax=1):
+    """
+    Custom implementation.
+    :param numpy_image_array: image ranging from 0 to 255
+    :param vmin: new range min
+    :param vmax: new range max
+    :return: image ranging from vmin to vmax
+    """
     return numpy_image_array / 255.0 * (vmax-vmin) + vmin
 
-def load_dataset(path, image_size, image_channels, vmin=0, vmax=1, conditional=False):
+
+def load_dataset(path, image_size=28, image_channels=1, vmin=0, vmax=1, conditional=False):
+    """
+    Custom implementation. Loads either only images for unconditional or images plus labels for conditional
+    :param path: dir of images (or category folders for conditional)
+    :param image_size: 28
+    :param image_channels: 1
+    :param vmin: image range min (0)
+    :param vmax: image range max (1)
+    :param conditional: True or False
+    :return: images and None/labels
+    """
     images = []
     if not conditional:
         for img_name in sorted(os.listdir(path)):
@@ -70,7 +95,6 @@ def load_dataset(path, image_size, image_channels, vmin=0, vmax=1, conditional=F
                 img = Image.open(os.path.join(folder_path, img_name)).resize((image_size, image_size))
                 img_np = transform(np.array(img, dtype=np.float32).reshape((image_size, image_size, image_channels)),
                                    vmin, vmax)
-                np_to_look_at = img_np[:, :, 0]
                 images.append(img_np)
                 labels.append(label_vec)
         return np.stack(images), np.stack(labels)
@@ -89,15 +113,14 @@ if __name__ == "__main__":
     parser.add_argument('--samples_path', type=str, default='samples')
     parser.add_argument('--summary_path', type=str, default='logs')
     conf = parser.parse_args()
+    cil_dir = os.path.dirname(os.path.dirname(__file__))
 
     conf.conditional = conf.model != ''
     if conf.data_path is None:
         if conf.conditional:
-            path = os.path.join(os.path.expanduser("~"),
-                                "CIL_project/AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats")
+            path = os.path.join(cil_dir, "images/clustered_images/labeled1_and_scoredover3_5cats")
         else:
-            path = os.path.join(os.path.expanduser("~"),
-                                "dataset/cil-cosmology-2018/cosmology_aux_data_170429/labeled1_and_scoredover3")
+            path = os.path.join(cil_dir, "images/extracted_stars/labeled1_and_scoredover3")
     conf.img_height = 28
     conf.img_width = 28
     conf.channel = 1

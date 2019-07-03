@@ -57,8 +57,6 @@ def load_km_with_conf(ckpt_path, model_name="model_config.json"):
     if ckpt_path.endswith('.data-00000-of-00001'):
         ckpt_path = ckpt_path[:-len('.data-00000-of-00001')]
     model_path = os.path.join("/".join(ckpt_path.split("/")[:-1]), model_name)
-    # todo: remove
-    sys.path.insert(2, os.path.join(os.path.dirname(ckpt_path), "code"))
 
     with open(os.path.join("/".join(ckpt_path.split("/")[:-1]), "config.yaml"), 'r') as stream:
         conf = yaml.full_load(stream)
@@ -71,13 +69,12 @@ def load_km_with_conf(ckpt_path, model_name="model_config.json"):
     return model, conf
 
 
-# todo: check score_tensor shape
 def score_tensor_with_rf(image_tensor, rf_model, conf):
     """
     :param image_tensor: tensor of shape [num_images, image_size, image_size] and an optional depth component
     :param rf_model: loaded Random Forest model (use load_rf_with_conf() to get it from path)
     :param conf: loaded configuration of rf_model (use load_rf_with_conf() to get it from rf_model path)
-    :return: tensor of shape [num_images, 1] containing a predicted score for each image in image_tensor
+    :return: tensor of shape [num_images] containing a predicted score for each image in image_tensor
     """
 
     if len(image_tensor.shape) == 4:
@@ -96,7 +93,7 @@ def score_tensor_with_keras_model(image_tensor, model, batch_size):
                          appropriate values for the model
     :param model: keras model (use load_km_with_conf() to load it from path)
     :param batch_size: appropriate batch size for GPU memory
-    :return: tensor of shape [num_images, 1] containing a predicted score for each image in image_tensor
+    :return: tensor of shape [num_images] containing a predicted score for each image in image_tensor
     """
 
     score_list = []
@@ -131,10 +128,10 @@ if __name__ == '__main__':
     parser.add_argument('--path', type=str, default=None,
                         help='Whole path to dir with images or path to individual image.')
     parser.add_argument('--nn_path', type=str, default=os.path.join(cil_dir, "Classifier/reference_run/"
-                        "fft_4convs_8features_MAE/cp-0140.ckpt.data-00000-of-00001"),
+                        "cp-0140.ckpt.data-00000-of-00001"),
                         help='Whole path to nn checkpoint file ending with .data-00000-of-00001')
     parser.add_argument('--rf_path', type=str, default=os.path.join(cil_dir, "RandomForest/"
-                        "final_model/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
+                        "reference_run/random_forest_96_1.pkl"), help='Whole path rf model (.pkl)')
     args = parser.parse_args()
 
     if args.path is None:

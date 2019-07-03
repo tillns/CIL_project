@@ -190,6 +190,15 @@ def create_complete_images(gen_model, vmin=0, num_images_to_create=100, num_clas
                         star_patch_size // 2:star_patch_size // 2 + image_size], latents_per_pic, stars_pos
 
 
+def save_images(image_tensor, num_classes):
+    img_save_dir = os.path.join(cil_dir, "images/cDCGAN_{}".format(num_classes))
+    if not os.path.exists(img_save_dir):
+        os.makedirs(img_save_dir)
+    for num_img in range(image_tensor.shape[0]):
+        img_np2 = image_tensor[num_img, :, :, 0]
+        plt.imsave(os.path.join(img_save_dir, "{}.png".format(num_img)), img_np2, cmap='gray', vmin=0, vmax=255)
+
+
 def find_and_save_good_setting(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf, best_score):
     """
     Loops infinitely to find best latent and pos setting for given model.
@@ -204,7 +213,6 @@ def find_and_save_good_setting(gen_model, conf, num_classes, rf_model, rf_conf, 
     """
 
     counter = 0
-    img_save_dir = os.path.join(cil_dir, "cDCGAN/compl_images_{}".format(num_classes))
     while True:
         rf_score, nn_score, image_tensor, latents_per_pic, stars_pos \
             = create_and_score_images(gen_model, conf, num_classes, rf_model, rf_conf, km_model, km_conf,
@@ -214,9 +222,7 @@ def find_and_save_good_setting(gen_model, conf, num_classes, rf_model, rf_conf, 
             best_score = current_score
             save_obj(latents_per_pic, "latents_per_pic_{}".format(num_classes))
             save_obj(stars_pos, "stars_pos_{}".format(num_classes))
-            for num_img in range(image_tensor.shape[0]):
-                img_np2 = image_tensor[num_img, :, :, 0]
-                plt.imsave(os.path.join(img_save_dir, "{}.png".format(num_img)), img_np2, cmap='gray', vmin=0, vmax=255)
+            save_images(image_tensor, num_classes)
         counter += 1
         print("\rFinished round {} Current best score: {}".format(counter, best_score), end="")
 
@@ -242,6 +248,7 @@ def create_and_score_images(gen_model, conf, num_classes, rf_model, rf_conf, km_
     rf_score = score_tensor_with_rf(image_tensor.copy(), rf_model, rf_conf)
     km_score = score_tensor_with_keras_model(km_transform(image_tensor.copy(), km_conf['use_fft']), km_model,
                                              km_conf['batch_size'])
+    save_images(image_tensor, num_classes)
     return rf_score, km_score, image_tensor, latents, pos
 
 
@@ -275,16 +282,15 @@ if __name__ == '__main__':
     cil_dir = os.path.dirname(os.path.dirname(__file__))
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', '--checkpoint_path', type=str, default=os.path.join(cil_dir,
-                        "cDCGAN/checkpoints/advanced_upsampling2d/cp_gen_epoch185.data-00000-of-00001"),
+                        "cDCGAN/reference_run/cp_gen_epoch185.data-00000-of-00001"),
                         help='Whole path to checkpoint file ending with .data-00000-of-00001')
-    parser.add_argument('--nn_path', type=str, default=os.path.join(cil_dir, "Classifier/reference_run/"
-                        "fft_4convs_8features_MAE/cp-0140.ckpt"),
+    parser.add_argument('--nn_path', type=str, default=os.path.join(cil_dir, "Classifier/reference_run/cp-0140.ckpt"),
                         help='Whole path to classfier nn checkpoint file ending with .data-00000-of-00001')
-    parser.add_argument('--rf_path', type=str, default=os.path.join(cil_dir, "RandomForest/final_model/"
+    parser.add_argument('--rf_path', type=str, default=os.path.join(cil_dir, "RandomForest/reference_run/"
                         "random_forest_96_1.pkl"),
                         help='Whole path rf model (.pkl)')
     parser.add_argument('-f', '--find_good_latents', type=bool, default=True, help="True: Loop infinitely to find good "
-                        "random latents and poisitions for the generated images. False: Create one set of images and "
+                        "random latents and positions for the generated images. False: Create one set of images and "
                         "score it.")
     parser.add_argument('--min_score', type=float, default=2.9486,
                         # 2.9486 is the highest mean score found after 2000 iterations

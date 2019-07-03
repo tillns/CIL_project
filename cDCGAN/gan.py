@@ -136,9 +136,9 @@ def train_gan(args):
     classifier_dir = os.path.join(cil_dir, "Classifier")
     if args.dataset_dir is None:
         if conf['conditional']:
-            image_directory = os.path.join(cil_dir, "AE_plus_KMeans/clustered_images/labeled1_and_scoredover3_5cats")
+            image_directory = os.path.join(cil_dir, "images/clustered_stars/labeled1_and_scoredover3_5cats")
         else:
-            image_directory = os.path.join(cil_dir, "extracted_stars/labeled1_and_scoredover3")
+            image_directory = os.path.join(cil_dir, "images/extracted_stars/labeled1_and_scoredover3")
     else:
         image_directory = args.dataset_dir
 

@@ -33,15 +33,6 @@ import argparse
 from CustomLayers import ResBlock, Padder, get_custom_objects, getNormLayer
 from utils import get_epoch_and_path, get_specific_cp, load_dataset
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
-parser.add_argument('-T', '--test_on_query', type=bool, default=False, help="Set to True to score query dataset.")
-parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
-                    help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
-parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
-                    "Complete path to ckpt file ending with .data-00000-of-00001")
-parser.add_argument("--dataset_dir", type=str, required=True, help="Complete path to cosmology_aux_data_170429 dir")
-
 
 class CrossEntropy(tf.keras.losses.Loss):
     """CrossEntropy
@@ -129,6 +120,14 @@ def get_model():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
+    parser.add_argument('-T', '--test_on_query', type=bool, default=False, help="Set to True to score query dataset.")
+    parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
+                        help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
+    parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
+                        "Complete path to ckpt file ending with .data-00000-of-00001")
+    parser.add_argument("--dataset_dir", type=str, required=True, help="Complete path to cosmology_aux_data_170429 dir")
     args = parser.parse_args()
 
     # load in the configurations from the config file
