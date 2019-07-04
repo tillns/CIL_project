@@ -43,11 +43,13 @@ to compile the cython files there.
 
 ## Image generation task
 
-## Stars Extractor
+## stars_extractor
 
-This project only contains some scripts to extract stars from the original images (stars_extractor.py), filter the original star images (create_dir_for_labeled_star_images.py) and also for measuring and approximating an integer gaussian distribution of all kinds of stars in the images (stars_clustered_distribution.py). The files can be run without additional arguments (e.g. python stars_extractor.py). Please refer to their individual documentation for adjustment of the default arguments.
-
-### AE_plus_KMeans
+This project only contains some scripts to extract stars from the original images (stars_extractor.py), filter the 
+original star images (create_dir_for_labeled_star_images.py) and also for measuring and approximating an unsigned integer 
+gaussian distribution of all kinds of stars in the images (stars_clustered_distribution.py). The files can be 
+run without additional arguments (e.g. `python stars_extractor.py`). Please refer to their individual documentation for 
+adjustment of the default arguments.
 
 ### Adhoc_generator
 
@@ -67,7 +69,22 @@ https://arxiv.org/abs/1511.06434 (DCGAN paper, contains values for most hyperpar
 https://github.com/Newmu/dcgan_code/blob/master/imagenet/load_pretrained.py (code from the authors of the DCGAN paper)  
 https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced public TensorFlow implementation)  
 
-### GAN
+### cDCGAN
+
+#### Training
+
+Execute the `gan.py` file and specify the path to the images as argument `--dataset-dir`. To train a conditional model on the 28x28 star patches,
+adjust the config.yaml s.t. the variable `conditional`is set to `True` and `model_kind`to `4`. Also make sure that the 
+provided data set contains a folder for each category with the corresponding images inside. For unconditional training on 
+the 28x28 star patches, set `conditional`is set to `False` and `model_kind`to `3`, and make sure that the provided path 
+to the dat set directly contains the images. Th results will be saved in a new folder inside the `checkpoints` directory.
+
+#### Generate Complete Images
+Use `create_complete_images.py` for one to generate and score images using the save distribution and to find an even better
+distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default 
+one. Set `--find_good_latents` to `False` if you wish to simply create and score some images. If not specified, the module
+will loop infinitely to find a better distribution.   
+
 
 ### VAE_stars
 
@@ -117,16 +134,29 @@ Or on the cluster:
 
 The generated 1000x1000 galaxy images inside `/generated` are evaluated. The similarity scores are stored inside `scorefile.csv`.
 
-### stars_extractor
+### AE_plus_KMeans
 
-### Autoencoder plus KMeans
+The purpose of this project is to find a compact representation for a dataset in order to cluster the stars using lower-dimensional data.
+First, an autoencoder is trained to find said compact representation. Afterwards, k-means is applied to the encoder's latent
+code of the images to cluster them.
 
-The purpose of this project is to find a compact representation for a dataset in order to cluster it with kmeans.
-Use ae.py to train an autoencoder on an image directory containg 28x28 images
-and use kmeans.py to then cluster the same images with the help of the saved encoder. Please refer to the classes'
-individual documentation for detailed use.
+For the autoencoder, run
 
-TODO: Further explanation needed
+`python ae.py --image_dir DIR/WITH/STAR/PATCHES`,
+
+where `DIR/WITH/STAR/PATCHES` is the directory containing the star patches of size 28x28 directly. A trained model of the 
+encoder is saved in a separate directory inside the `checkpoints` folder. Provide the path to this encoder model to the 
+k-means script as argument. Run
+
+`python kmeans.py --econder_path PATH/TO/encoder_config.json`.
+
+The clustered images are saved to a separate directory inside `images/clustered_stars` if not specified otherwise via
+the `--target_dir` argument.
+
+### Image Scorer
+Use the file `cDCGAN/img_scorer.py` to score an arbitrary image of size 1000x1000 or a folder containing images of size
+1000x1000. Provide the path to either the image or the folder via the argument `--path`. You will get as output a score
+approximated by both the CNN and RF and additionally their mean.  
 
 ## Similarity scorer task
 
@@ -140,7 +170,7 @@ Training:
 
 Prediction:
 
-    python classifier.py --test_on_query=True --restore_ckpt=True --ckpt_path=/path/to/checkpoint/cp####.ckpt.data-00000-of-00001
+    python classifier.py --test_on_query=True --dataset_dir=/path/to/cosmology_aux_data_170429 --ckpt_path=/path/to/checkpoint/cp####.ckpt.data-00000-of-00001
 
 Where `/path/to/checkpoint/cp####.ckpt.data-00000-of-00001`
 is a valid path to the checkpoint and `####` is replaced with the checkpoint number.
