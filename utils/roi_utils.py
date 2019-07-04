@@ -86,7 +86,6 @@ def roi_histograms(image, conf):
                                                               range_normal))
 
     if roi_conf['grad']['include'] and use_grad:
-        # Todo: I think this only uses data without fft, add fft
 
         grad_img = ((psd_log + 150.0) / 2.0).astype(np.uint8)
         gx = cv2.Sobel(grad_img, cv2.CV_32F, 1, 0, ksize=1)
