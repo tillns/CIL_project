@@ -5,24 +5,6 @@ Authors: Sven Kellenberger, Hannes Pfammatter, Till Schnabel, Michelle Woon
 
 Group: Galaxy Crusaders
 
-## TODO
-
-### Delete unnecessary files
-
-- Generated images are at the moment in many different locations and even have different names. Either delete them or make a seperate directory with only images and remove images everywhere else. Also remove `.zip` files.
-- `RandomForest/final_model/` if this is needed for another model, save the `.pkl` file there (only this file, no config, losses etc.).
-- `papers/` I don't think that we should have the papers we cite on Github
-- `cDCGAN/` I would remove the `reference_run` because it is reproducible. I would also remove the `.pkl` files but we could also leave those.
-- `Classifier/` Same for `reference_run`
-- `DCGAN` remove checkpoints and the `.csv` files
-
-### Code
-
-- All open points in the code are marked with a `TODO` comment.
-- Documentation is not always consistent (at times `Paramters`, other times `params:`). However this is consistent if you only look into at single files so this doens't have to be done.
-- Some methods lack documentation. However they are mostly short so this isn't really urgent.
-- I am not sure but I am under the impression that some things are not needed any more. The person who created it should be able to decide this but don't be afraid to delete things! (after all that's why we use git)
-
 ## Requirements
 
 Install all requirements with
@@ -47,9 +29,7 @@ adjustment of the default arguments.
 This adhoc method randomly places stars that it has detected from the given labelled images and
 places them randomly onto a black image.
 
-##### Generation
-`python ./Adhoc_generator/Adhoc.py --data_path=/path/to/data`
-
+    python Adhoc.py --data_path=/path/to/data
 
 ### DCGAN
 
@@ -62,10 +42,9 @@ https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced pub
 
 ### cDCGAN
 
-#### Training
+    python gan.py --dataset-dir=/path/to/dataset
 
-Execute the `gan.py` file and specify the path to the images as argument `--dataset-dir`. To train a conditional model on the 28x28 star patches,
-adjust the config.yaml s.t. the variable `conditional`is set to `True` and `model_kind`to `4`. Also make sure that the
+To train a conditional model on the 28x28 star patches, adjust the config.yaml s.t. the variable `conditional`is set to `True` and `model_kind`to `4`. Also make sure that the
 provided data set contains a folder for each category with the corresponding images inside. For unconditional training on
 the 28x28 star patches, set `conditional`is set to `False` and `model_kind`to `3`, and make sure that the provided path
 to the dat set directly contains the images. Th results will be saved in a new folder inside the `checkpoints` directory.
@@ -79,49 +58,27 @@ will loop infinitely to find a better distribution.
 
 ### VAE_stars
 
-A variational autoencoder model for star image generation.
-
-#### Paths
-- The path to the folder containing the labeled images and the path to the CSV file containing the image labels have to be set inside `star_vae_train.py`
-
-#### Execution
-##### Training
-
-`python star_vae_train.py`
-
-Or on the cluster:
-
-`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python star_vae_train.py"`
+A variational autoencoder model for star image generation.The path to the folder containing the labeled images and the path to the CSV file containing the image labels have to be set inside `star_vae_train.py` which can than be executed with
+    
+    python star_vae_train.py
 
 The weights of the generative model (decoder) are subsequently saved inside `/ckpt_generative`.
 
-##### Star image generation
+To generate small star images run:
 
-`python generate_star_images.py`
-
-Or on the cluster:
-
-`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python generate_star_images.py`
+    python generate_star_images.py
 
 The generated 28x28 star images are subsequently saved inside `/generated`.
 
-##### Complete image generation
+To create complete star images, run then:
 
-`python generate_complete_images.py`
-
-Or on the cluster:
-
-`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python generate_complete_images.py`
+    python generate_complete_images.py
 
 The generated 1000x1000 galaxy images are subsequently saved inside `/generated`.
 
-##### Complete image evaluation
+To evaluate the generated image, run:
 
-`python evaluate_complete_images.py`
-
-Or on the cluster:
-
-`bsub -n 8 -W 4:00 -R "rusage[mem=2048, ngpus_excl_p=1]" "python evaluate_complete_images.py`
+    python evaluate_complete_images.py
 
 The generated 1000x1000 galaxy images inside `/generated` are evaluated. The similarity scores are stored inside `scorefile.csv`.
 
@@ -133,21 +90,24 @@ code of the images to cluster them.
 
 For the autoencoder, run
 
-`python ae.py --image_dir DIR/WITH/STAR/PATCHES`,
+    python ae.py --image_dir DIR/WITH/STAR/PATCHES
 
 where `DIR/WITH/STAR/PATCHES` is the directory containing the star patches of size 28x28 directly. A trained model of the
 encoder is saved in a separate directory inside the `checkpoints` folder. Provide the path to this encoder model to the
 k-means script as argument. Run
 
-`python kmeans.py --econder_path PATH/TO/encoder_config.json`.
+    python kmeans.py --econder_path PATH/TO/encoder_config.json
 
 The clustered images are saved to a separate directory inside `images/clustered_stars` if not specified otherwise via
 the `--target_dir` argument.
 
 ### Image Scorer
+
 Use the file `cDCGAN/img_scorer.py` to score an arbitrary image of size 1000x1000 or a folder containing images of size
 1000x1000. Provide the path to either the image or the folder via the argument `--path`. You will get as output a score
-approximated by both the CNN and RF and additionally their mean.  
+approximated by both the CNN and RF and additionally their mean. Run
+
+    python img_scorer.py --path=/path/to/images
 
 ## Similarity scorer task
 
