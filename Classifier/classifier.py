@@ -26,6 +26,7 @@ import os
 import sys
 import math
 from datetime import datetime
+import time
 from sklearn.linear_model import LinearRegression
 import csv
 import yaml
@@ -122,7 +123,7 @@ def get_model():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', '--is_cluster', type=bool, default=False, help='Set to true if code runs on cluster.')
-    parser.add_argument('-T', '--test_on_query', type=bool, default=True, help="Set to True to score query dataset.")
+    parser.add_argument('-T', '--test_on_query', type=bool, default=False, help="Set to True to score query dataset.")
     parser.add_argument('-R', '--restore_ckpt', type=bool, default=False,
                         help="Set to true if you want to restore a checkpoint. Can't be False if test_on_query is True")
     parser.add_argument('-P', '--ckpt_path', type=str, default=None, help=
@@ -182,6 +183,7 @@ if __name__ == '__main__':
 
     #Testing model on the query data set.
     if test_on_query:
+        start_time = time.time()
         with open(os.path.join(cp_dir_time, "config.yaml"), 'r') as stream:
             conf = yaml.full_load(stream)
         image_size = conf['image_size']
@@ -203,6 +205,7 @@ if __name__ == '__main__':
                     filewriter.writerow([img_list[i * batch_size + j].split(".")[0], score[j]])
                 print("\rScored image {}/{}".format(min((i + 1) * batch_size, query_images.shape[0]),
                                                     query_images.shape[0]), end="")
+        print("\nElapsed time: {}".format(time.time() - start_time))
 
     # (Continue to) train the model
     else:
