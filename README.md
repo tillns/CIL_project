@@ -50,7 +50,7 @@ to compile the cython files there.
 
 <a name="stars_extractor"/>
 
-## stars_extractor
+### stars_extractor
 
 This project only contains some scripts to extract stars from the original images (stars_extractor.py), filter the
 original star images (create_dir_for_labeled_star_images.py) and also for measuring and approximating an unsigned integer
@@ -91,7 +91,7 @@ to the dat set directly contains the images. Th results will be saved in a new f
 
 <a name="generate_complete_images"/>
 
-#### Generate Complete Images
+### Generate Complete Images
 
 Use `create_complete_images.py` for one to generate and score images using the save distribution and to find an even better
 distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default
