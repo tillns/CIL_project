@@ -33,8 +33,9 @@ Group: Galaxy Crusaders
    [RandomForest](#random_forest)
 
 
-## Requirements
 <a name="requirements"/>
+
+## Requirements
 
 Install all requirements with
 
@@ -43,11 +44,13 @@ Install all requirements with
 After installing all requirements, head into the `utils/` folder and run `python setup.py build_ext -i`
 to compile the cython files there.
 
-## Image Generation Task
 <a name="image_generation"/>
 
-## stars_extractor
+## Image Generation Task
+
 <a name="stars_extractor"/>
+
+## stars_extractor
 
 This project only contains some scripts to extract stars from the original images (stars_extractor.py), filter the
 original star images (create_dir_for_labeled_star_images.py) and also for measuring and approximating an unsigned integer
@@ -55,16 +58,18 @@ gaussian distribution of all kinds of stars in the images (stars_clustered_distr
 run without additional arguments (e.g. `python stars_extractor.py`). Please refer to their individual documentation for
 adjustment of the default arguments.
 
-### Adhoc_generator
 <a name="adhoc"/>
+
+### Adhoc_generator
 
 This adhoc method randomly places stars that it has detected from the given labelled images and
 places them randomly onto a black image.
 
     python Adhoc.py --data_path=/path/to/data
 
-### DCGAN
 <a name="dcgan"/>
+
+### DCGAN
 
 **Sources**
 
@@ -73,8 +78,9 @@ https://arxiv.org/abs/1511.06434 (DCGAN paper, contains values for most hyperpar
 https://github.com/Newmu/dcgan_code/blob/master/imagenet/load_pretrained.py (code from the authors of the DCGAN paper)  
 https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced public TensorFlow implementation)  
 
-### cDCGAN
 <a name="cdcgan"/>
+
+### cDCGAN
 
     python gan.py --dataset-dir=/path/to/dataset
 
@@ -83,16 +89,18 @@ provided data set contains a folder for each category with the corresponding ima
 the 28x28 star patches, set `conditional`is set to `False` and `model_kind`to `3`, and make sure that the provided path
 to the dat set directly contains the images. Th results will be saved in a new folder inside the `checkpoints` directory.
 
-#### Generate Complete Images
 <a name="generate_complete_images"/>
+
+#### Generate Complete Images
+
 Use `create_complete_images.py` for one to generate and score images using the save distribution and to find an even better
 distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default
 one. Set `--find_good_latents` to `False` if you wish to simply create and score some images. If not specified, the module
 will loop infinitely to find a better distribution.   
 
+<a name="vae"/>
 
 ### VAE_stars
-<a name="vae"/>
 
 A variational autoencoder model for star image generation.The path to the folder containing the labeled images and the path to the CSV file containing the image labels have to be set inside `star_vae_train.py` which can than be executed with
     
@@ -118,8 +126,9 @@ To evaluate the generated image, run:
 
 The generated 1000x1000 galaxy images inside `/generated` are evaluated. The similarity scores are stored inside `scorefile.csv`.
 
-### AE_plus_KMeans
 <a name="ae_plus_kmeans"/>
+
+### AE_plus_KMeans
 
 The purpose of this project is to find a compact representation for a dataset in order to cluster the stars using lower-dimensional data.
 First, an autoencoder is trained to find said compact representation. Afterwards, k-means is applied to the encoder's latent
@@ -138,8 +147,9 @@ k-means script as argument. Run
 The clustered images are saved to a separate directory inside `images/clustered_stars` if not specified otherwise via
 the `--target_dir` argument.
 
-### Image Scorer
 <a name="image_scorer"/>
+
+### Image Scorer
 
 Use the file `cDCGAN/img_scorer.py` to score an arbitrary image of size 1000x1000 or a folder containing images of size
 1000x1000. Provide the path to either the image or the folder via the argument `--path`. You will get as output a score
@@ -147,11 +157,13 @@ approximated by both the CNN and RF and additionally their mean. Run
 
     python img_scorer.py --path=/path/to/images
 
-## Similarity Scorer Task
 <a name="similarity_task"/>
 
-### Classifier
+## Similarity Scorer Task
+
 <a name="classifier"/>
+
+### Classifier
 
 A similarity scorer using a Convolutional Neural Network.
 
@@ -166,8 +178,9 @@ Prediction:
 Where `/path/to/checkpoint/cp####.ckpt.data-00000-of-00001`
 is a valid path to the checkpoint and `####` is replaced with the checkpoint number.
 
-### RandomForest
 <a name="random_forest"/>
+
+### RandomForest
 
 This model takes two command line arguments which are required:
 
