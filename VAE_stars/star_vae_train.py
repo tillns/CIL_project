@@ -11,26 +11,25 @@ from star_vae_utils import load_train_test_dataset
 
 import tensorflow as tf
 
+import os
+
 from argparse import ArgumentParser
 
 
 # File paths
 
 parser_vae = ArgumentParser()
-# TODO remove hard coded paths and add help and required flag
-parser_vae.add_argument("--path_csv", default="/cluster/home/hannepfa/cosmology_aux_data/labeled.csv", type=str)
-parser_vae.add_argument("--dir_labeled_images", default="/cluster/home/hannepfa/cosmology_aux_data/labeled/", type=str)
-parser_vae.add_argument("--path_ckpt_generative",
-                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/ckpt_generative/checkpoint", type=str)
-parser_vae.add_argument("--path_ckpt_generative_stable",
-                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/ckpt_generative_stable/checkpoint", type=str)
-parser_vae.add_argument("--output_dir_generated_images",
-                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/generated/", type=str)
-parser_vae.add_argument("--path_pretrained_random_forest",
-                        default="/cluster/home/hannepfa/CIL_project/RandomForest/random_forest_10_0.9.pkl", type=str)
-parser_vae.add_argument("--path_scorefile",
-                        default="/cluster/home/hannepfa/CIL_project/VAE_stars/scorefile.csv", type=str)
-parser_vae.add_argument("--frac_train", default=0.9, type=float)
+
+parser_vae.add_argument("--data_directory", type=str, required=True, 
+                        help="Required. The directory where the data set is stored.")
+parser_vae.add_argument("--path_ckpt_generative", type=str, required=False, default="ckpt_generative/checkpoint", 
+                        help="Optinal. The path to the checkpoint which is stored after training.")
+parser_vae.add_argument("--path_ckpt_generative_stable", type=str, required=False, default="ckpt_generative_stable/checkpoint", 
+                        help="Optional. The path to the checkpoint which is loaded for image generation.")
+parser_vae.add_argument("--output_dir_generated_images", type=str, required=False, default="generated", 
+                        help="Optional. The directory where generated images are written to.")
+parser_vae.add_argument("--frac_train", type=float, required=False, default=0.9, 
+                        help="Optional. The validation split for training.")
 
 
 # Hyperparameters
@@ -170,7 +169,7 @@ def _apply_gradients(optimizer, gradients, variables):
 
 def train_star_vae(path_csv, path_labeled_images, frac_train, model):
 
-    """Trains the star variational autoencoder model on the dataset of labeled galaxy images
+    """Trains the star variational autoencoder model on the dataset of labeled cosmology images
 
 
     Parameters
@@ -253,15 +252,21 @@ if __name__ == "__main__":
 
     arguments = parser_vae.parse_args()
 
-    path_csv = arguments.path_csv
-    dir_labeled_images = arguments.dir_labeled_images
+    data_directory = arguments.data_directory
     path_ckpt_generative = arguments.path_ckpt_generative
     frac_train = arguments.frac_train
 
 
     model = StarVAE(_latent_dim)
+    
+    
+    path_csv = os.path.join(data_directory, "labeled.csv")
+    
+    path_labeled_images = os.path.join(data_directory, "labeled")
 
-    train_star_vae(path_csv, dir_labeled_images, frac_train, model)
+    
+    train_star_vae(path_csv, path_labeled_images, frac_train, model)
 
 
-    save_ckpt_generative(model.generative_net, path_ckpt_generative)
+    save_ckpt_generative(model.generative_net, os.path.join(os.path.dirname(__file__), path_ckpt_generative))
+    

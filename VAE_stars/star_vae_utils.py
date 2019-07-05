@@ -75,7 +75,7 @@ def _extract_stars_28x28(image):
 def _load_stars_28x28(path_csv, path_labeled_images):
     """ Creates a list of star images
 
-    Loads the labeled images and extracts a list of approximately 6000 star images with dimensions 28x28.
+    Loads the labeled images and extracts a list of star images with dimensions 28x28.
 
     Parameters
     ----------
@@ -129,7 +129,7 @@ def _load_stars_28x28(path_csv, path_labeled_images):
 
             if labels[idx] == 1.0: # include only images with label == 1.0
 
-                img = cv2.imread(path_labeled_images + filename, cv2.IMREAD_GRAYSCALE)
+                img = cv2.imread(os.path.join(path_labeled_images, filename), cv2.IMREAD_GRAYSCALE)
 
 
                 patches = _extract_stars_28x28(img)
@@ -152,8 +152,8 @@ def _load_stars_28x28(path_csv, path_labeled_images):
 def load_train_test_dataset(path_csv, path_labeled_images, frac_train, batch_size):
     """ Creates a train and a test dataset of star images
 
-    Loads the labeled images, extracts a list of approximately 6000 star images with dimensions 28x28 and
-    creates a test and a train dataset based on these.
+    Loads the labeled images, extracts a list of star images with dimensions 28x28 and creates a test and 
+    a train dataset based on these.
 
 
     Parameters
@@ -189,3 +189,4 @@ def load_train_test_dataset(path_csv, path_labeled_images, frac_train, batch_siz
         star_images[num_images_train:, :, :, :]).shuffle(num_images_test).batch(batch_size)
 
     return train_dataset, test_dataset
+

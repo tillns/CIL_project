@@ -14,13 +14,15 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
+import os
+
 
 if __name__ == "__main__":
 
     arguments = parser_vae.parse_args()
 
-    path_ckpt_generative_stable = arguments.path_ckpt_generative_stable
-    output_dir_generated_images = arguments.output_dir_generated_images
+    path_ckpt_generative_stable = os.path.join(os.path.dirname(__file__), arguments.path_ckpt_generative_stable)
+    output_dir_generated_images = os.path.join(os.path.dirname(__file__), arguments.output_dir_generated_images)
 
 
     model = StarVAE(16) # NOTE: latent dimension is explicitly set
@@ -28,7 +30,10 @@ if __name__ == "__main__":
     generative_net = model.generative_net
 
     generative_net.load_weights(path_ckpt_generative_stable)
-
+    
+    
+    if not os.path.exists(output_dir_generated_images):
+        os.makedirs(output_dir_generated_images)
 
     num_samples = 100
 
@@ -40,4 +45,5 @@ if __name__ == "__main__":
 
         sample = (np.array(tf.sigmoid(samples_logits[j, :, :, :])).reshape(28, 28) * 255).astype(np.uint8)
 
-        cv2.imwrite(output_dir_generated_images + "image" + str(j) + ".png", sample)
+        cv2.imwrite(os.path.join(output_dir_generated_images, "image" + str(j) + ".png"), sample)
+        

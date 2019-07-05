@@ -15,6 +15,8 @@ from random import gauss, randint
 
 import cv2
 
+import os
+
 
 # Parameters for number of stars per image
 
@@ -61,15 +63,15 @@ def create_complete_images(output_dir, generative_net, background=0, num_images=
 
         image = image_padded[14 : 14 + 1000, 14 : 14 + 1000]
 
-        cv2.imwrite(output_dir + "image" + str(i) + ".png", image)
+        cv2.imwrite(os.path.join(output_dir, "image" + str(i) + ".png"), image)
 
 
 if __name__ == "__main__":
 
     arguments = parser_vae.parse_args()
 
-    path_ckpt_generative_stable = arguments.path_ckpt_generative_stable
-    output_dir_generated_images = arguments.output_dir_generated_images
+    path_ckpt_generative_stable = os.path.join(os.path.dirname(__file__), arguments.path_ckpt_generative_stable)
+    output_dir_generated_images = os.path.join(os.path.dirname(__file__), arguments.output_dir_generated_images)
 
 
     model = StarVAE(16) # NOTE: latent dimension is explicitly set
@@ -78,5 +80,9 @@ if __name__ == "__main__":
 
     generative_net.load_weights(path_ckpt_generative_stable)
 
+    
+    if not os.path.exists(output_dir_generated_images):
+        os.makedirs(output_dir_generated_images)
 
     create_complete_images(output_dir_generated_images, generative_net)
+    
