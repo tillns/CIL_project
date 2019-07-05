@@ -33,6 +33,8 @@ Group: Galaxy Crusaders
    
 5. [Report](#report)
 
+6. [generated_images]{#generated_images}
+
 
 <a name="requirements"/>
 
@@ -209,3 +211,9 @@ To train the model, head into the `RandomForest/` subdirectory and run:
     
 ## Report
 This directory contains the LaTeX files as well as the compiled pdf of the report.
+
+
+<a name="generated_images"/>
+
+## generated_images
+This directory contains our final generated cosmology images.
