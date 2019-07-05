@@ -18,8 +18,6 @@ Group: Galaxy Crusaders
    
    [cDCGAN](#cdcgan)
    
-   [Generate Complete Images](#generate_complete_images)
-   
    [VAE_stars](#vae)
    
    [AE_plus_KMeans](#ae_plus_kmeans)
@@ -95,15 +93,11 @@ To train a conditional model on the 28x28 star patches, adjust the config.yaml s
 the 28x28 star patches, set `conditional` to `False` and `model_kind` to `3`, and make sure that the provided path
 to the data set directly contains the images. The results will be saved in a new folder inside the `checkpoints` directory.
 
-<a name="generate_complete_images"/>
-
-### Generate Complete Images
-
-Run 
+To generate complete images using the trained cDCGAN and also score them, run 
 
     python create_complete_images.py
 
-to generate and score images while looping infinitely to find a good distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default one. Set `--find_good_latents` to `False` if you wish to simply create and score some images without the infinite loop using the saved distribution.
+The algorithm will loop infinitely by default to find a good distribution. Set `--find_good_latents` to `False` if you wish to simply create and score some images without the infinite loop using the saved distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default one. However, the files `gen_config.json` and `config.yaml` must be in the same directory as the custom checkpoint.
 
 <a name="vae"/>
 
