@@ -69,7 +69,8 @@ To filter the original star images, run
 where you may also specify whether to filter the labeled images to only keep those with label 1 by setting `--kind=labeled`, or to filter the scored images to only keep those with score above a custom number by setting `--scored_thresh=your_scored_threshold`.
 
 To measure and approximate an unsigned-integer-bound gaussian distribution of all kinds of stars in the images, run
-`python stars_clustered_distribution.py --unclustered_stars_dir=/dir/containing/unclustered/stars --clustered_stars_dir=/dir/containing/clustered/stars`
+
+    python stars_clustered_distribution.py --unclustered_stars_dir=/dir/containing/unclustered/stars --clustered_stars_dir=/dir/containing/clustered/stars
 
 <a name="adhoc"/>
 
