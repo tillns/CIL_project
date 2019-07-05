@@ -190,6 +190,8 @@ if __name__ == '__main__':
 
     # create output directory
     out_dir = "./images/Adhoc_generated_images"
+    if not os.path.exists("./images"):
+        os.mkdir("./images")
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
