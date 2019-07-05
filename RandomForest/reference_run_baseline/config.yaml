@@ -1,0 +1,74 @@
+split_ratio: 1  # 0 to 1. Set to e.g. 0.9 to use 90% of the data for training and 10% for validation.
+random_seed: 1234  # seed fed into random generator to make output deterministic
+# Total number of images to load. May be set to low numbers for testing new configs before final training.
+num_imgs_to_load: 20000
+#  number of estimators (list of four integers)
+n_estimators:
+  - 5
+  - 10
+  - 50
+  - 100
+# ranges for histograms (list of one or multiple lists of two integers, the first lower than the second)
+ranges:
+      -
+        - 10
+        - 90
+      -
+        - -120
+        - 180
+
+# specify region of interest histograms. The parameters are:
+# include: whether to use this ROI histogram
+# prepr_fft: use the FFT preprocessed image data for this ROI histogram
+# num_bins: number of bins, which is a list (for each range an element) or even a list of lists depending on the context
+ROI_options:
+  # normal histogram over whole image region
+  whole_img:
+    include: True
+    prepr_fft: False
+    num_bins: 30
+
+  # use quarters of image
+  quarter_img:
+    include: False
+    prepr_fft: True
+    num_bins:
+      - 33
+      - 15
+
+  # Use image centered circle as region. num_bins must be list for each radius. Negative radius means the region around
+  # the circle, not the one inside, is considered.
+  radial:
+    include: False
+    prepr_fft: True
+    shift_fft: True  # whether to shift the FFT preprocessed image or not
+    num_bins:
+            -
+              - 33
+              - 15
+    radii:
+         - -460
+
+  # gradient mapped image inside a circle
+  grad:
+    include: False
+    prepr_fft: True
+    num_bins: 13
+    radius: 110
+
+  # only consider regions within the specified angles (angle region goes from angle_l to angle_r). num_bins must be a
+  # list of list, for each angle range a list with an integer for every histogram range.
+  angle:
+    include: False
+    prepr_fft: True
+    num_bins:
+            -
+              - 33
+              - 15
+
+    angle_l:
+           - 0
+
+    angle_h:
+           - 18
+
