@@ -30,7 +30,7 @@ This paper explores various machine learning models for generating sparse, high-
 %These models are described and the motivation for their usage is explained. 
 The contribution of this paper is twofold. Beside the design of models for cosmology image generation, a similarity function, which is part of our data, is learned.
 
-The generative models are compared to a simple baseline model and evaluated by estimating the values of the similarity function. We found that extracting the most important features from the images and designing generative models for these features only produced the best results. Our approximation of the similarity function achieved $2^{nd}$ place on both the public and private test data set.
+The generative models are compared to a simple baseline model and evaluated by estimating the values of the similarity function. We found that extracting the most important features from the images and designing generative models for these features only produced the best results. Our approximation of the similarity function achieved $2^{nd}$ place on both the public and private test data set on Kaggle \cite{Kaggle}.
 %$2^{nd}$ best result on both public and private Kaggle test data sets.
 
 
@@ -48,7 +48,8 @@ Generative modeling is not a new area of research. However, with the recent adve
 In this project, we study the generation of cosmology images. Our cosmology images are sparse, high-dimensional data, which has proven to be an interesting problem suitable for the application of mathematical methods and machine learning models.
 
 We split our project into two parts. First, we designed multiple machine learning models for cosmology image generation. Our starting point was a deep convolutional generative adversarial network (DCGAN) capable of generating cosmology images with high resolution. As this model was not able to capture important features such as stars with enough detail, we decided to focus on generating these features only for the other models. 
-For the generation of stars only we designed a variational autoencoder (VAE), a DCGAN and used an existing PixelCNN. 
+%For the generation of stars only we designed a variational autoencoder (VAE), a DCGAN and used an existing PixelCNN. 
+For the generation of stars only we designed a variational autoencoder (VAE) and a DCGAN. 
 Our final solution consists of a conditional DCGAN (cDCGAN) that is able to generate several classes of stars that were found by clustering.
 
 Second, we designed a convolutional neural network (CNN) and used an off-the-shelf random forest (RF) regression model to learn the similarity function which is part of our data. Finally, we evaluated our generative models by estimating the similarity scores of the generated images. 
@@ -71,7 +72,7 @@ Second, we designed a convolutional neural network (CNN) and used an off-the-she
 %This section briefly describes the models and methods which were used for this project and explains the motivation for their usage. 
 The data set used for this paper was obtained from Kaggle. It consists of labeled images ($\in \{0,1\}$ depending if it is a cosmology image or not), scored images (based on their similarity) and query images (to be scored and uploaded to Kaggle).
 
-We built all our neural networks using the Keras (Chollet et al.\@ \cite{chollet2015keras}) API on the TensorFlow (Abadi et al.\@ \cite{tensorflow2015-whitepaper}) backend and trained them on a single NVIDIA Tesla V100-SXM2 \SI{32}{GB} GPU on the Leonhard Cluster.
+We built all our neural networks using the Keras (Chollet et al.\@ \cite{chollet2015keras}) API on the TensorFlow (Abadi et al.\@ \cite{tensorflow2015-whitepaper}) backend and trained them on a single NVIDIA Tesla V100-SXM2 \SI{32}{GB} GPU on the Leonhard Cluster. The RF models were run locally.
 
 \subsection{Approximation of the Similarity Function}
 
@@ -137,7 +138,8 @@ Our final architecture is shown in Figure \ref{fig:nn_classifier_arch}. The netw
 
 \subsection{Cosmology Image Generation}
 
-\subsubsection{Adhoc Generator (AG) baseline} % easy baseline
+\subsubsection{Adhoc Generator (AG) baseline} 
+\label{subsubsec: adhoc} % easy baseline
 Cosmology images in the given data sets are, in essence, white stars on a black background, as such we were able to use a simple tiling method for our easy baseline. This is done by copying stars from the available data and placing them onto a black background. Using the available labeled data, we detect stars in all the cosmology images by finding contours in the image. Doing this also allows us to find the minimum and maximum amount of stars in a cosmology image.
 
 Each image to generate first starts out as a black destination image. Then, for each image to generate, a random number between the minimum and maximum amount of stars is selected. For each star to place into the image, a random source cosmology image is chosen and then a random star from that source image is taken. That star is then placed on a random spot in the destination image.
@@ -157,14 +159,14 @@ Our implementation is based on on a reference implementation on the TensorFlow w
 
 For training, all labeled images and all scored images in the data set with similarity score greater or equal to \SI{2.61}{} were used. The pixel intensities were normalized to the range \SIrange{-1}{1}{} and the images were padded to dimensions $\SI{1024}{}\times\SI{1024}{}$ to simplify upsampling and strided convolutions. Generator and discriminator contain a total amount of \SI{6491125}{} trainable parameters.
 
-\subsubsection{VAE on stars} % hard baseline
+\subsubsection{VAE on stars baseline} % hard baseline
 In our second approach, we focused on the generation of the most important features only. We used a variational autoencoder (VAE) to generate images of stars and placed them within a black background. 
 
 The VAE was introduced in 2014 by Kingma and Welling \cite{DBLP:journals/corr/KingmaW13}. It allows the encoding of data points to low-dimensional latent representations  $\sim\mathcal{N}(0, I)$ and to generate new data points by decoding arbitrary latent vectors $\sim\mathcal{N}(0, I)$. This is achieved by learning to map each data point $x$ to a Gaussian distribution $q_{\phi}(z|x)$ determined by $\mu$ and $\sigma$ and each latent vector $z$ to a Bernoulli distribution $p_{\theta}(x|z)$ determined by $p$.
  
 Our implementation is based on the original paper as well as on the tutorial on variational autoencoders by Doersch \cite{doersch2016tutorial} and on a reference implementation on the TensorFlow website \cite{cvaetf}. Because stars are shaped in a similar fashion, a multilayer perceptron (MLP) with a single hidden layer of size \SI{500}{} is used for both the probabilistic encoder $q_{\phi}(z|x)$ and the probabilistic decoder $p_{\theta}(x|z)$. The parameters of the MLPs are denoted by $\phi$ and $\theta$. The latent dimension is set to \SI{16}{}. 
 
-For training, only the labeled images were used. Using the approach of the adhoc generator, stars were extracted and centered inside images of size \SI{28}{}x\SI{28}{}. The pixel intensities were normalized to the range \SIrange{0}{1}{}. The MLPs contain a total amount of \SI{811816}{} trainable parameters. To create cosmology images, generated star images were distributed randomly inside an image with black background. The number of stars per image is normally distributed and estimated from the labeled images. 
+For training, only the labeled images were used. Using the approach of the adhoc generator in Section \ref{subsubsec: adhoc}, stars were extracted and centered inside images of size \SI{28}{}x\SI{28}{}. The pixel intensities were normalized to the range \SIrange{0}{1}{}. The MLPs contain a total amount of \SI{811816}{} trainable parameters. To create cosmology images, generated star images were distributed randomly inside an image with black background. The number of stars per image is normally distributed and estimated from the labeled images. 
 
 
 \begin{figure}
@@ -181,7 +183,7 @@ In order to control the star distribution in an image more precisely, we decided
 Afterwards, we used the clustered data to train a conditional DCGAN (cDCGAN). Beside the image/latent code, the generator/discriminator was also fed the class label belonging to a star. In order to find a good distribution for the final images, we measured the number of occurrences of each star class per cosmology image and approximated it with a normal distribution bound to unsigned integers. We assumed the positioning of a star to be distributed uniformly. We then placed the stars generated by the cDCGAN into \SI{100}{} background images and repeated this process for \SI{2000}{} times to find those random numbers that produced the highest mean similarity scores (MSS) as estimated by our random forest (RF) and CNN models. We included this deterministic image stitching and MSS estimation as validation score into the training of our final cDCGAN.
 
 
-The architecture of the cDCGAN was adopted from the reference implementation on the TensorFlow website \cite{dcgantf}. No adjustments to the resolution had to be made, only the conditional property had to be added. The architecture of the conditional generator is shown in Figure \ref{fig:cgen_arch}. It uses a total amount of \SI{3212480}{} trainable parameters. Figure \ref{fig:clustered_generated_stars} shows generated samples of the five different star classes. The discriminator uses \SI{269313}{} trainable parameters. Its architecture is illustrated in Figure \ref{fig:cdis_arch}. The total amount of parameters is high compared to e.g.@ the CNN and could have been reduced. However, since the generation of such small images is very stable, no architectural experiments were conducted. The cDCGAN was trained for 185 epochs, and about half the training time was spent on validation.
+The architecture of the cDCGAN was adopted from the reference implementation on the TensorFlow website \cite{dcgantf}. No adjustments to the resolution had to be made, only the conditional property had to be added. The architecture of the conditional generator is shown in Figure \ref{fig:cgen_arch}. It uses a total amount of \SI{3212480}{} trainable parameters. Figure \ref{fig:clustered_generated_stars} shows generated samples of the five different star classes. The discriminator uses \SI{269313}{} trainable parameters. Its architecture is illustrated in Figure \ref{fig:cdis_arch}. The total amount of parameters is high compared to e.g.\@ the CNN and could have been reduced. However, since the generation of such small images is very stable, no architectural experiments were conducted. The cDCGAN was trained for 185 epochs, and about half the training time was spent on validation.
 
 \begin{figure}
     \centering
@@ -223,7 +225,7 @@ All of our models for approximating the similarity function were evaluated on Ka
 %During the training of the CNN, we also calculated the MAE of the model on the validation set that was kept separate from the training set. These results are visible in Table \ref{tab:SFA_MSS}. While the RF models were also initially trained on a training set and were validated locally with the rest of the data from the scored data set, the models used for the approximation of the query set were trained on the whole data set. 
 %For the CNN, we additionally calculated the MAE on the local \SI{20}{\percent} validation split. Since the RF is not as prone to overfitting, the final model was trained on the whole set. As such, we do not have local scores for the RF models in Table \ref{tab:SFA_MSS}.
 %We have also included training and scoring time for these models in Table \ref{tab:SFA_time}. We built all our neural networks with the Keras (Chollet et al.\@ \cite{chollet2015keras}) API using TensorFlow (Abadi et al.\@ \cite{tensorflow2015-whitepaper}) backend and trained them on the Leonhard cluster, using the NVIDIA Tesla V100-SXM2 \SI{32}{GB} GPU. One can clearly see that our best RF model outperforms the CNN in both score and performance time.
-For the CNN, we additionally calculated the MAE on our local \SI{20}{\percent} validation split. Since the RF was prone to overfitting, it was trained without a local validation split and local results are omitted. We included training and scoring time for these models in Table \ref{tab:SFA_time}. 
+For the CNN, we additionally calculated the MAE on our local \SI{20}{\percent} validation split. Since the RF was not prone to overfitting, it was trained without a local validation split and local results are omitted. We included training and scoring time for these models in Table \ref{tab:SFA_time}. 
 
 %One can see that our best RF model outperforms the CNN baseline in both accuracy and performance.
 
@@ -233,9 +235,9 @@ For the CNN, we additionally calculated the MAE on our local \SI{20}{\percent} v
 
 For our generative models, we decided to follow the evaluation process of the Kaggle competition and used our best RF model and the CNN to estimate the mean similarity score of the generated images. The results are displayed in Table \ref{tab:gen_MSS}. The time needed for training and the generation of $100$ images is shown in Table \ref{tab:gen_time}. 
 
-As shown in Figure \ref{fig:dcgan_stars}, the large DCGAN did not manage to capture the shape of important features in detail. Table \ref{tab:gen_MSS} shows the estimated similarity scores for these cosmology images.
+As shown in Figure \ref{fig:dcgan_stars}, the large DCGAN did not manage to capture the shape of important features in detail. %This might explain why it scored the lowest as shown in Table \ref{tab:gen_MSS}.
 
-Figure \ref{fig:vae_interpolation} shows linear interpolations between vectors in the latent space of the variational autoencoder (VAE) to demonstrate that the model works well. Table \ref{tab:gen_MSS} shows the estimated similarity scores for the corresponding cosmology images.
+Figure \ref{fig:vae_interpolation} shows linear interpolations between vectors in the latent space of the variational autoencoder (VAE) to demonstrate that the model works well. %Table \ref{tab:gen_MSS} shows the estimated similarity scores for the corresponding cosmology images.
 
 %To evaluate our generators we used our two best similarity function approximators, i.e.\@ our best RF model and CNN, to calculate the mean similarity score of the images. We chose not to train and use a conventional classifier to evaluate the generated images, as the Kaggle competition states that the images will be scored according to their mean similarity to a prototypical cosmology image. As such we decided to use the same evaluation process. These results are visible in Table \ref{tab:gen_MSS}. The time needed for training and generating $100$ images each for the various models is displayed in Table \ref{tab:gen_time}. 
 
@@ -245,7 +247,7 @@ Figure \ref{fig:vae_interpolation} shows linear interpolations between vectors i
         Model           & MAE           & STD           &  MAE          &  MAE \\
                         & (loc.)        & (loc.)        & (pub.)        & (priv.) \\
     \midrule
-        RF (baseline)   & -             & -             & \SI{0.258}{}  & \SI{0.287}{} \\
+        RF (baseline)   & -             & -             & \SI{0.269}{}  & \SI{0.288}{} \\
         CNN             & \SI{0.174}{}  & \SI{0.279}{}  & \SI{0.168}{}  & \SI{0.188}{} \\
         RF (best)       & -             & -             & \SI{0.095}{}  & \SI{0.105}{} \\
     \bottomrule
@@ -274,9 +276,9 @@ Figure \ref{fig:vae_interpolation} shows linear interpolations between vectors i
     \toprule
         Approximator    & Training time     & Scoring time \\
     \midrule
-        RF (all)        & \SI{1.5}{\hour}   & \SI{2}{\minute} \\
-        CNN             & \SI{24}{\hour}    & \SI{1}{\minute}  \\
-        %RF (best)       & \SI{1.5}{\hour}     & \SI{2}{\minute} \\
+        RF (baseline)   & \SI{40}{\minute}  & \SI{2}{\minute} \\
+        CNN             & \SI{24}{\hour}    & \SI{1}{\minute} \\
+        RF (best)       & \SI{1.5}{\hour}   & \SI{2}{\minute} \\
     \bottomrule
     \end{tabular}
 \caption{Training and scoring time for our various similarity function approximators (including preprocessing).}\label{tab:SFA_time}
@@ -315,11 +317,11 @@ Figure \ref{fig:vae_interpolation} shows linear interpolations between vectors i
 
 \section{Discussion}
 
-From Table \ref{tab:SFA_MSS} we can observe that all of our models for approximating the similarity function outperform the baseline. Presently, classification is mostly dominated by CNNs. Still, our RF model performed significantly better than our CNN. We thus conclude that for sparse data of limited range, there are still methods beside neural networks that can be useful. 
+From Table \ref{tab:SFA_MSS} we can observe that all of our models for approximating the similarity function outperform the baseline. From our experiments and also from Table \ref{tab:SFA_MSS} we find that using FFT on the sparse cosmology images allowed our models to perform better. Presently, classification is mostly dominated by CNNs. Still, our RF model performed significantly better than our CNN, which we have taken to be our hard baseline. We thus conclude that for sparse data of limited range, there are still methods beside neural networks that can be useful. 
 
 Table \ref{tab:gen_MSS} shows that the cDCGAN achieves the highest mean similarity score (MSS) of all models and also significantly outperforms the baseline in terms of MSS. Besides the highest MSS, the cDCGAN also reaches the highest standard deviation (STD). This is because we try to approximate the star distribution with ``good'' random numbers by choosing those giving the highest MSS. An additional neural network could have learnt to produce the ``perfect'' set of cosmology images by learning the star distribution on its own. %newline or no newline here?
 
-The large DCGAN does not exceed the performance of the baseline and is outperformed by both VAE and cDCGAN. This shows that we were indeed able to improve our results by focusing on the generation of key features only.
+The large DCGAN does not exceed the performance of the baseline and is outperformed by both cDCGAN and the baseline set by the VAE. The poor performance of the large DCGAN is caused by the shape of the stars it produces and might also be affected by the placement of stars in an image. This shows that we were indeed able to improve our results by focusing on the generation of key features only.
 
 
 %Besides the highest mean similarity score (MSS), the cDCGAN also reaches the highest standard deviation (STD). This is because we try to approximate the star distribution with ``good'' random numbers by choosing those giving the highest MSS. Instead, an additional neural network could have learnt to produce the ``perfect'' set of cosmology images by learning the star distribution on its own. The trained CNN regression model could have been used as a loss function. However, because of gradient computations, the RF model could not have been used. 
