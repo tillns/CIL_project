@@ -117,13 +117,13 @@ A variational autoencoder model for star image generation. The model can be trai
 
 The weights of the generative model (decoder) are subsequently saved inside `/ckpt_generative`.
 
-To generate star images run:
+To generate star images with a pretrained model run:
 
     python generate_star_images.py --data_directory=/path/to/dataset
 
 The generated 28x28 star images are subsequently saved inside `/generated`.
 
-To create complete star images, run then:
+To create complete cosmology images, run then:
 
     python generate_complete_images.py --data_directory=/path/to/dataset
 
