@@ -30,7 +30,7 @@ This paper explores various machine learning models for generating sparse, high-
 %These models are described and the motivation for their usage is explained. 
 The contribution of this paper is twofold. Besides the design of models for cosmology image generation, a similarity function, which is part of our data, is learned.
 
-The generative models are compared to a simple baseline model and evaluated by estimating the values of the similarity function. We found that extracting the most important features from the images and only designing generative models for these features produced the best results. Our approximation of the similarity function achieved $2^{nd}$ place on both the public and private test data set on Kaggle \cite{Kaggle}.
+The generative models are compared to a simple baseline model and evaluated by estimating the values of the similarity function. We found that extracting the most important features from the images and only designing generative models for these features produced the best results. Our approximation of the similarity function achieved second place on both the public and private test data set on Kaggle \cite{Kaggle}.
 %\TODO{Not sure, but maybe we should explicitly, briefly mention what models and methods are used.}
 
 
@@ -47,9 +47,7 @@ Generative modeling is not a new area of research. However, with the recent adve
 
 In this project, we study the generation of cosmology images. Our cosmology images are sparse, high-dimensional data, which has proven to be an interesting problem suitable for the application of mathematical methods and machine learning models.
 
-We split our project into two parts. First, we designed multiple machine learning models for cosmology image generation. Our starting point was a deep convolutional generative adversarial network (DCGAN) capable of generating cosmology images with high resolution. As this model was not able to capture important features such as stars with enough detail, we decided to focus on generating these features only for the other models. 
-%For the generation of stars only we designed a variational autoencoder (VAE), a DCGAN and used an existing PixelCNN. 
-For the generation of stars only, we designed a variational autoencoder (VAE) and a DCGAN. 
+We split our project into two parts. First, we designed multiple machine learning models for cosmology image generation. Our starting point was a deep convolutional generative adversarial network (DCGAN) capable of generating cosmology images with high resolution. As this model was not able to capture important features such as stars with enough detail, we decided to focus the remaining models on the generation of these critical features only. For the generation of stars only, we designed a variational autoencoder (VAE) and a DCGAN. 
 Our final solution consists of a conditional DCGAN (cDCGAN) that is able to generate several classes of stars that were found by clustering.
 
 Second, we designed a convolutional neural network (CNN) and used an off-the-shelf random forest (RF) regression model to learn the similarity function which is part of our data. Finally, we evaluated our generative models by estimating the similarity scores of the generated images. 
@@ -70,7 +68,7 @@ Second, we designed a convolutional neural network (CNN) and used an off-the-she
 
 \section{Models and Methods} \label{sec:models_methods}
 %This section briefly describes the models and methods which were used for this project and explains the motivation for their usage. 
-The data set used for this paper was obtained from Kaggle. It consists of labeled images ($\in \{0,1\}$ depending if it is a cosmology image or not), scored images ($\in \SIrange{0}{8}{}$ based on their similarity) and query images (to be scored and uploaded to Kaggle).
+The data set used for this paper was obtained from Kaggle. It consists of labeled images (where label $\in \{0,1\}$ depending on if it is a cosmology image or not), scored images (where score $\in \SIrange{0}{8}{}$ based on how much the image looks like a galaxy image) and query images (to be scored and uploaded to Kaggle).
 
 We built all our neural networks using the Keras (Chollet et al.\@ \cite{chollet2015keras}) API on the TensorFlow (Abadi et al.\@ \cite{tensorflow2015-whitepaper}) backend and trained them on a single NVIDIA Tesla V100-SXM2 \SI{32}{GB} GPU on the Leonhard Cluster. The RF models were run locally.
 
@@ -146,20 +144,22 @@ Our final architecture is shown in Figure \ref{fig:nn_classifier_arch}. The netw
 
 Cosmology images in the given data sets are, in essence, white stars on a black background. As such we were able to use a simple tiling method for our easy baseline, where we copied stars from the available data and placed them onto a black background. Using the available labeled data, we detected stars in all the cosmology images by finding contours in the image. Doing this also allowed us to find the minimum $s_{\text{min}}$ and maximum $s_{\text{max}}$ amount of stars in a cosmology image.
 
-For each image to generate, we started with a black destination image. Then, we selected a random number $s_{\text{rand}}$ between $s_{\text{min}}$ and $s_{\text{max}}$. Finally, we extracted $s_{\text{rand}}$ stars from random source cosmology images and placed them on random spots into the destination image.
+For each image to generate, we started with a black base image. Then, we selected a random number $s_{\text{rand}}$ between $s_{\text{min}}$ and $s_{\text{max}}$. Finally, we extracted $s_{\text{rand}}$ stars from random source cosmology images and placed them on random spots into the destination image.
 
 \subsubsection{Large DCGAN}
 
 The deep convolutional generative adversarial network (DCGAN) was introduced in 2015 by Radford et al.\@ \cite{Radford}. It is a generative adversarial network (GAN) where both generator and discriminator are convolutional neural networks (CNNs) with architectural constraints which stabilize training. We used a large DCGAN to generate entire cosmology images. 
 
-Our implementation is based on on a reference implementation on the TensorFlow website \cite{dcgantf} as well as on the original paper and implementation. As proposed by Odena et al.\@ \cite{Odena} we used nearest neighbor interpolation and convolution instead of transposed convolution.
+Our implementation is based on a reference implementation on the TensorFlow website \cite{dcgantf} as well as on the original paper and implementation. As proposed by Odena et al.\@ \cite{Odena} we used nearest neighbor interpolation and convolution instead of transposed convolution.
 
 For training, all labeled images and all scored images in the data set with similarity score greater or equal to \SI{2.61}{} were used. The pixel intensities were normalized to the range \SIrange{-1}{1}{} and the images were padded to dimensions $\SI{1024}{}\times\SI{1024}{}$ to simplify upsampling and strided convolutions. Generator and discriminator contain a total amount of \SI{6491125}{} trainable parameters and were trained with the cross entropy loss.
 
 \subsubsection{VAE on stars baseline} % hard baseline
-In our second approach, we focused on the generation of the most important features only. We used a variational autoencoder (VAE) to generate images of stars and placed them within a black background. 
+In this approach, we focused on the generation of the most important features only. We used a variational autoencoder (VAE) to generate images of stars and placed them within a black background. 
 
-The VAE was introduced in 2014 by Kingma and Welling \cite{DBLP:journals/corr/KingmaW13}. It allows the encoding of data points to low-dimensional latent representations  $\sim\mathcal{N}(0, I)$ and to generate new data points by decoding arbitrary latent vectors $\sim\mathcal{N}(0, I)$. This is achieved by learning to map each data point $x$ to a Gaussian distribution $q_{\phi}(z|x)$ determined by $\mu$ and $\sigma$ and each latent vector $z$ to a Bernoulli distribution $p_{\theta}(x|z)$ determined by $p$.
+
+The VAE was introduced in 2014 by Kingma and Welling \cite{DBLP:journals/corr/KingmaW13}. It allows the encoding of data points to low-dimensional latent representations  $\sim\mathcal{N}(0, I)$ and to generate new data points by decoding arbitrary latent vectors $\sim\mathcal{N}(0, I)$. This is achieved by learning to map each data point $x$ to a Gaussian distribution $q_{\phi}(z|x)$, determined by the mean $\mu$ and standard deviation $\sigma$, and each latent vector $z$ to a Bernoulli distribution $p_{\theta}(x|z)$ determined by parameter $p$.
+%\TODO{Here i would add, what $\mu$, $\sigma$ and $p$ are. i.e. "determined by the mean $\mu$ and standard deviation $\sigma$.}
  
 Our implementation is based on the original paper as well as on the tutorial on variational autoencoders by Doersch \cite{doersch2016tutorial} and on a reference implementation on the TensorFlow website \cite{cvaetf}. Because stars are shaped in a similar fashion, a simple multilayer perceptron (MLP) with a single hidden layer of size \SI{500}{} is used for both the probabilistic encoder $q_{\phi}(z|x)$ and the probabilistic decoder $p_{\theta}(x|z)$. The parameters of the MLPs are denoted by $\phi$ and $\theta$. The latent dimension is set to \SI{16}{}. 
 
@@ -171,7 +171,7 @@ We drew the number of stars from a normal distribution estimated from the labele
 Taking the same approach as with the VAE, we also trained a smaller DCGAN on our data set of extracted stars.
 In order to control the star distribution in an image more precisely, we decided to cluster the star images. Considering our large data set of about \SI{15000}{} star images, most of them looked very similar, which is why we chose to divide them into five distinct classes. To achieve that, we trained a simple deep convolutional autoencoder (DCAE) on the star images for 400 epochs and applied $k$-means clustering on each image's latent code. We did not have to worry about overfitting the DCAE, because it was only used on the data it was trained on.
 
-Afterwards, we used the clustered data to train a conditional DCGAN (cDCGAN). Beside the image/latent code, the generator/discriminator was also fed the class label belonging to a star. In order to find a good distribution for the final images, we measured the number of occurrences of each star class per cosmology image and approximated it with a normal distribution bound to unsigned integers. We still assumed the positioning of a star to be distributed uniformly. We then placed the stars generated by the cDCGAN into \SI{100}{} background images and repeated this process for \SI{2000}{} times to find those random numbers that produced the highest mean similarity scores (MSS) as estimated by our random forest (RF) and CNN models. We included this deterministic image stitching and MSS estimation as validation score into the training of our final cDCGAN.
+Afterwards, we used the clustered data to train a conditional DCGAN (cDCGAN). Beside the image/latent code, the generator/discriminator was also fed the class label belonging to a star. In order to find a good distribution for the final images, we measured the number of occurrences of each star class per cosmology image and approximated it with a normal distribution bound to unsigned integers. We still assumed the positioning of a star to be distributed uniformly. We then placed the stars generated by the cDCGAN into \SI{100}{} background images and repeated this process \SI{2000}{} times to find those random numbers that produced the highest mean similarity scores (MSS) as estimated by our random forest (RF) and CNN models. We included this deterministic image stitching and MSS estimation as validation score into the training of our final cDCGAN.
 
 The architecture of the cDCGAN was adopted from the reference implementation on the TensorFlow website \cite{dcgantf}. No adjustments to the resolution had to be made, only the conditional property had to be added. The architecture of the conditional generator is shown in Figure \ref{fig:cgen_arch}. It uses a total amount of \SI{3212480}{} trainable parameters. The discriminator uses \SI{269313}{} trainable parameters. Its architecture is illustrated in Figure \ref{fig:cdis_arch}. The total amount of parameters is high compared to e.g.\@ the CNN and could have been reduced. However, since the generation of such small images is very stable, no architectural experiments were conducted. The cDCGAN was trained for 185 epochs with LSGAN (Mao et al.\@ \cite{lsgan}) as loss function, and about half the training time was spent on validation.
 
