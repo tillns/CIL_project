@@ -1,4 +1,3 @@
-# todo: Test that all methods are still called correctly after removing protected (_) thingy
 class CallbackList(object):
     """
     This class overwrites the default callback from tf keras for multi model support (e.g. generator and discriminator).
