@@ -15,7 +15,7 @@ Group: Galaxy Crusaders
    
    [Adhoc_generator](#adhoc)
    
-   [large DCGAN](#dcgan)
+   [DCGAN](#dcgan)
    
    [cDCGAN](#cdcgan)
    
@@ -82,7 +82,7 @@ places them randomly onto a black image.
 
 <a name="dcgan"/>
 
-### large DCGAN
+### DCGAN
 
 A large DCGAN for star the generation of galaxy images. The model can be trained with
     
