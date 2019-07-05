@@ -47,7 +47,7 @@ to compile the cython files there.
 <a name="trained_models"/>
 
 ## Trained Models
-For every model used in this project, there is a `reference_run` folder inside the corresponding directory, which contains the trained model and some additional basic information like the configuration.  For the random forest, there is an additional `reference_run_baseline` folder that contains the baseline model mentioned in the report.
+For most models used in this project, there is a `reference_run` folder inside the corresponding directory, which contains the trained model and some additional basic information like the configuration.  For the random forest, there is an additional `reference_run_baseline` folder that contains the baseline model mentioned in the report.
 
 
 <a name="image_generation"/>
