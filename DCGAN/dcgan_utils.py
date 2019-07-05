@@ -29,7 +29,7 @@ def _load_labeled_images(arguments):
     """
 
     try:
-        csv_file = open(arguments.path_csv_labeled, "r")
+        csv_file = open(os.path.join(arguments.data_directory, "labeled.csv"), "r")
 
         list_id_label = [] # contains string tuples (id, label)
 
@@ -47,7 +47,7 @@ def _load_labeled_images(arguments):
 
         list_filenames = [] # contains filenames of images
 
-        for filename in os.listdir(arguments.dir_labeled_images):
+        for filename in os.listdir(os.path.join(arguments.data_directory, "labeled")):
             if filename.endswith(".png") and not filename.startswith("."):
                 list_filenames.append(filename)
 
@@ -66,7 +66,8 @@ def _load_labeled_images(arguments):
 
             if labels[idx] == 1.0: # include only images with label == 1.0
 
-                img = cv2.imread(os.path.join(arguments.dir_labeled_images, filename), cv2.IMREAD_GRAYSCALE)
+                img = cv2.imread(os.path.join(arguments.data_directory, 
+                                              os.path.join("labeled", filename)), cv2.IMREAD_GRAYSCALE)
 
 
                 arr_padded = np.zeros((1024, 1024), dtype=np.float32)
@@ -107,7 +108,7 @@ def _load_scored_images(arguments):
     """
 
     try:
-        csv_file = open(arguments.path_csv_scored, "r")
+        csv_file = open(os.path.join(arguments.data_directory, "scored.csv"), "r")
 
         list_id_score = [] # contains string tuples (id, score)
 
@@ -125,7 +126,7 @@ def _load_scored_images(arguments):
 
         list_filenames = [] # contains filenames of images
 
-        for filename in os.listdir(arguments.dir_scored_images):
+        for filename in os.listdir(os.path.join(arguments.data_directory, "scored")):
             if filename.endswith(".png") and not filename.startswith("."):
                 list_filenames.append(filename)
 
@@ -144,7 +145,8 @@ def _load_scored_images(arguments):
 
             if scores[idx] >= 2.61: # include only images with score >= 2.61
 
-                img = cv2.imread(os.path.join(arguments.dir_scored_images, filename), cv2.IMREAD_GRAYSCALE)
+                img = cv2.imread(os.path.join(arguments.data_directory, 
+                                              os.path.join("scored", filename)), cv2.IMREAD_GRAYSCALE)
 
 
                 arr_padded = np.zeros((1024, 1024), dtype=np.float32)
@@ -227,3 +229,4 @@ def load_train_test_dataset(arguments, batch_size):
         images[num_images_train:, :, :, :]).shuffle(num_images_test).batch(batch_size)
 
     return train_dataset, test_dataset
+

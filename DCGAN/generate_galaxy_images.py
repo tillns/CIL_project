@@ -19,20 +19,6 @@ from dcgan_model import make_discriminator_model
 
 
 def create_galaxy_images(output_dir, generator, num_images=100):
-    """Dummy Title
-
-    TODO: This is a description of this method/module. Description is optional.
-
-    Parameters
-    ----------
-    foo : int
-    	foo does whatever
-
-    Returns
-    -------
-    bar : str
-    	bar is also whatever
-    """
 
     for i in range(num_images):
 
@@ -48,11 +34,11 @@ def create_galaxy_images(output_dir, generator, num_images=100):
 
 
 if __name__ == "__main__":
-    #TODO this file has no arguments!? Why parse them?
-    arguments = parser_dcgan.parse_args()
 
-    path_ckpt_stable = arguments.path_ckpt_stable
-    output_dir_generated_images = arguments.output_dir_generated_images
+    arguments = parser_dcgan.parse_args()
+    
+    path_ckpt_stable =  os.path.join(os.path.dirname(os.path.abspath(__file__)), arguments.path_ckpt_stable)
+    output_dir_generated_images =  os.path.join(os.path.dirname(__file__), arguments.output_dir_generated_images)
 
 
     generator = make_generator_model()
@@ -62,5 +48,10 @@ if __name__ == "__main__":
 
     checkpoint.restore(tf.train.latest_checkpoint(path_ckpt_stable))
 
+    
+    if not os.path.exists(output_dir_generated_images):
+        os.makedirs(output_dir_generated_images)
 
     create_galaxy_images(output_dir_generated_images, generator)
+
+    

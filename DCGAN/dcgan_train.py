@@ -21,26 +21,21 @@ from argparse import ArgumentParser
 
 # File paths
 
-# TODO: Remove hard coded paths and add help and required flags
 parser_dcgan = ArgumentParser()
-parser_dcgan.add_argument("--path_csv_labeled", default="/cluster/home/hannepfa/cosmology_aux_data/labeled.csv", type=str)
-parser_dcgan.add_argument("--dir_labeled_images", default="/cluster/home/hannepfa/cosmology_aux_data/labeled", type=str)
-parser_dcgan.add_argument("--path_csv_scored", default="/cluster/home/hannepfa/cosmology_aux_data/scored.csv", type=str)
-parser_dcgan.add_argument("--dir_scored_images", default="/cluster/home/hannepfa/cosmology_aux_data/scored", type=str)
 
-parser_dcgan.add_argument("--path_ckpt",
-                        default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt/checkpoint", type=str)
-parser_dcgan.add_argument("--path_ckpt_stable",
-                        default="/cluster/home/hannepfa/CIL_project/DCGAN/ckpt_stable/checkpoint", type=str)
+parser_dcgan.add_argument("--data_directory", type=str, required=True, 
+                          help="Required. The directory where the data set is stored.")
 
-parser_dcgan.add_argument("--output_dir_generated_images",
-                        default="/cluster/home/hannepfa/CIL_project/DCGAN/generated", type=str)
-parser_dcgan.add_argument("--path_pretrained_random_forest",
-                        default="/cluster/home/hannepfa/CIL_project/RandomForest/random_forest_10_0.9.pkl", type=str)
-parser_dcgan.add_argument("--path_scorefile",
-                        default="/cluster/home/hannepfa/CIL_project/DCGAN/scorefile.csv", type=str)
+parser_dcgan.add_argument("--path_ckpt", type=str, required=False, default="ckpt/checkpoint",
+                          help="Optinal. The path to the checkpoints which are stored during training.")
+parser_dcgan.add_argument("--path_ckpt_stable", type=str, required=False, default="ckpt_stable", 
+                          help="Optional. The path to the checkpoint directory for image generation.")
 
-parser_dcgan.add_argument("--frac_train", default=0.9, type=float)
+parser_dcgan.add_argument("--output_dir_generated_images", type=str, required=False, default="generated", 
+                          help="Optional. The directory where generated images are written to.")
+
+parser_dcgan.add_argument("--frac_train", type=float, required=False, default=0.9, 
+                          help="Optional. The validation split for training.")
 
 
 # Hyperparameters
@@ -199,7 +194,7 @@ def train_dcgan(arguments, generator, discriminator):
 
         if epoch >= 80 and epoch % 5 == 0:
 
-            checkpoint.save(file_prefix=arguments.path_ckpt)
+            checkpoint.save(file_prefix=os.path.join(os.path.dirname(__file__), arguments.path_ckpt))
 
 
     return gen_loss_test, disc_loss_test
@@ -216,11 +211,3 @@ if __name__ == "__main__":
 
     gen_loss_test, disc_loss_test = train_dcgan(arguments, generator, discriminator)
 
-    # TODO absolute paths
-    with open("/cluster/home/hannepfa/CIL_project/DCGAN/gen_loss_test.csv", "w") as f:
-        for item in gen_loss_test:
-            f.write("{}\n".format(item))
-
-    with open("/cluster/home/hannepfa/CIL_project/DCGAN/disc_loss_test.csv", "w") as f:
-        for item in disc_loss_test:
-            f.write("{}\n".format(item))
