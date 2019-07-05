@@ -30,6 +30,8 @@ Group: Galaxy Crusaders
    [Classifier](#classifier)
    
    [RandomForest](#random_forest)
+   
+5. [Report](#report)
 
 
 <a name="requirements"/>
@@ -202,3 +204,8 @@ All other options can be set in the config file.
 To train the model, head into the `RandomForest/` subdirectory and run:
 
     python random_forest.py --data-directory=/path/to/the/data/ --dump-directory=/path/to/dump/directory/
+    
+<a name="report"/>
+    
+## Report
+This directory contains the LaTeX files as well as the compiled pdf of the report.
