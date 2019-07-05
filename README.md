@@ -15,7 +15,7 @@ Group: Galaxy Crusaders
    
    [Adhoc_generator](#adhoc)
    
-   [DCGAN](#dcgan)
+   [large DCGAN](#dcgan)
    
    [cDCGAN](#cdcgan)
    
@@ -82,14 +82,19 @@ places them randomly onto a black image.
 
 <a name="dcgan"/>
 
-### DCGAN
+### large DCGAN
 
-**Sources**
+A large DCGAN for star the generation of galaxy images. The model can be trained with
+    
+    python dcgan_train.py --data_directory=/path/to/dataset
 
-https://www.tensorflow.org/alpha/tutorials/generative/dcgan (TensorFlow DCGAN tutorial, code is based on this)  
-https://arxiv.org/abs/1511.06434 (DCGAN paper, contains values for most hyperparameters)  
-https://github.com/Newmu/dcgan_code/blob/master/imagenet/load_pretrained.py (code from the authors of the DCGAN paper)  
-https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced public TensorFlow implementation)  
+After 80 epochs, the weights of the generator are saved every 5 epochs inside `/ckpt`.
+
+To generate galaxy images with the pretrained reference model run:
+
+    python generate_galaxy_images.py --data_directory=/path/to/dataset
+
+The generated 1000x1000 galaxy images are subsequently saved inside `/generated`. 
 
 <a name="cdcgan"/>
 
@@ -117,7 +122,7 @@ A variational autoencoder model for star image generation. The model can be trai
 
 The weights of the generative model (decoder) are subsequently saved inside `/ckpt_generative`.
 
-To generate star images with a pretrained model run:
+To generate star images with the pretrained reference model run:
 
     python generate_star_images.py --data_directory=/path/to/dataset
 
