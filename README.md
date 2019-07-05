@@ -123,7 +123,7 @@ To generate star images with a pretrained model run:
 
 The generated 28x28 star images are subsequently saved inside `/generated`.
 
-To create complete cosmology images, run then:
+To create complete galaxy images, run then:
 
     python generate_complete_images.py --data_directory=/path/to/dataset
 
