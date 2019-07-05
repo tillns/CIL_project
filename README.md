@@ -8,7 +8,8 @@ Group: Galaxy Crusaders
 ## Table of Contents
 
 1. [Requirements](#requirements)
-2. [Image Generation Task](#image_generation)
+2. [Trained Models](#trained_models)
+3. [Image Generation Task](#image_generation)
 
    [stars_extractor](#stars_extractor)
    
@@ -24,7 +25,7 @@ Group: Galaxy Crusaders
    
    [Image Scorer](#image_scorer)
    
-3. [Similarity Scorer Task](#similarity_task)
+4. [Similarity Scorer Task](#similarity_task)
 
    [Classifier](#classifier)
    
@@ -41,6 +42,13 @@ Install all requirements with
 
 After installing all requirements, head into the `utils/` folder and run `python setup.py build_ext -i`
 to compile the cython files there.
+
+
+<a name="trained_models"/>
+
+## Trained Models
+For every model used in this project, there is a `reference_run` folder inside the corresponding directory, which contains the trained model and some additional basic information like the configuration.  For the random forest, there is an additional `reference_run_baseline` folder that contains the baseline model mentioned in the report.
+
 
 <a name="image_generation"/>
 
