@@ -17,7 +17,7 @@ import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--kind', type=str, default="scored", help="'scored' or 'labeled'")
-    parser.add_argument('--scored_thresh', type=float, default=3, help="For scored images, "
+    parser.add_argument('--scored_thresh', type=float, default=2.61, help="For scored images, "
                                                                        "only save those >= this threshold")
     parser.add_argument('--dataset_dir', type='str', required=True, help="Path to cosmology_aux_data_170429 directory.")
     parser.add_argument('--target_dir', type=str, required=True, help="Directory in which to save fitting stars.")

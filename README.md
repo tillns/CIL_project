@@ -52,11 +52,16 @@ to compile the cython files there.
 
 ### stars_extractor
 
-This project only contains some scripts to extract stars from the original images (stars_extractor.py), filter the
-original star images (create_dir_for_labeled_star_images.py) and also for measuring and approximating an unsigned integer
-gaussian distribution of all kinds of stars in the images (stars_clustered_distribution.py). The files can be
-run without additional arguments (e.g. `python stars_extractor.py`). Please refer to their individual documentation for
-adjustment of the default arguments.
+This project only contains some basic scripts. To extract stars from the original images, run
+`python stars_extractor.py --img_dir=/dir/with/large/images --target_dir=/dir/to/save/star/patches`), 
+
+To filter the original star images, run
+`python create_dir_for_labeled_star_images.py --dataset_dir=/path/to/cosmology_aux_data_170429 --target_dir=/dir/to/save/filtered/images`
+where you may also specify whether to filter the labeled images to only keep those with label 1 by setting `--kind=labeled`, or to filter the scored images to only keep those with score above a custom number by setting `--scored_thresh=your_scored_threshold`.
+
+
+To measure and approximate an unsigned-integer-bound gaussian distribution of all kinds of stars in the images, run
+`python stars_clustered_distribution.py --unclustered_stars_dir=/dir/containing/unclustered/stars --clustered_stars_dir=/dir/containing/clustered/stars`
 
 <a name="adhoc"/>
 
@@ -86,17 +91,16 @@ https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced pub
 
 To train a conditional model on the 28x28 star patches, adjust the config.yaml s.t. the variable `conditional`is set to `True` and `model_kind`to `4`. Also make sure that the
 provided data set contains a folder for each category with the corresponding images inside. For unconditional training on
-the 28x28 star patches, set `conditional`is set to `False` and `model_kind`to `3`, and make sure that the provided path
-to the dat set directly contains the images. Th results will be saved in a new folder inside the `checkpoints` directory.
+the 28x28 star patches, set `conditional` to `False` and `model_kind `to `3`, and make sure that the provided path
+to the data set directly contains the images. The results will be saved in a new folder inside the `checkpoints` directory.
 
 <a name="generate_complete_images"/>
 
 ### Generate Complete Images
 
-Use `create_complete_images.py` for one to generate and score images using the save distribution and to find an even better
-distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default
-one. Set `--find_good_latents` to `False` if you wish to simply create and score some images. If not specified, the module
-will loop infinitely to find a better distribution.   
+Run 
+`python create_complete_images.py` 
+to generate and score images while looping infinitely to find a good distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default one. Set `--find_good_latents` to `False` if you wish to simply create and score some images without the infinite loop using the saved distribution.
 
 <a name="vae"/>
 
@@ -136,13 +140,13 @@ code of the images to cluster them.
 
 For the autoencoder, run
 
-    python ae.py --image_dir DIR/WITH/STAR/PATCHES
+    python ae.py --image_dir=dir/with/star/images
 
-where `DIR/WITH/STAR/PATCHES` is the directory containing the star patches of size 28x28 directly. A trained model of the
+where `dir/with/star/images` is the directory containing the star patches of size 28x28 directly. A trained model of the
 encoder is saved in a separate directory inside the `checkpoints` folder. Provide the path to this encoder model to the
 k-means script as argument. Run
 
-    python kmeans.py --econder_path PATH/TO/encoder_config.json
+    python kmeans.py --econder_path /path/to/encoder_config.json
 
 The clustered images are saved to a separate directory inside `images/clustered_stars` if not specified otherwise via
 the `--target_dir` argument.
