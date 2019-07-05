@@ -111,29 +111,23 @@ The algorithm will loop infinitely by default to find a good distribution. Set `
 
 ### VAE_stars
 
-A variational autoencoder model for star image generation.The path to the folder containing the labeled images and the path to the CSV file containing the image labels have to be set inside `star_vae_train.py` which can than be executed with
+A variational autoencoder model for star image generation. The model can be trained with
     
-    python star_vae_train.py
+    python star_vae_train.py --data_directory=/path/to/dataset
 
 The weights of the generative model (decoder) are subsequently saved inside `/ckpt_generative`.
 
-To generate small star images run:
+To generate star images run:
 
-    python generate_star_images.py
+    python generate_star_images.py --data_directory=/path/to/dataset
 
 The generated 28x28 star images are subsequently saved inside `/generated`.
 
 To create complete star images, run then:
 
-    python generate_complete_images.py
+    python generate_complete_images.py --data_directory=/path/to/dataset
 
 The generated 1000x1000 galaxy images are subsequently saved inside `/generated`.
-
-To evaluate the generated image, run:
-
-    python evaluate_complete_images.py
-
-The generated 1000x1000 galaxy images inside `/generated` are evaluated. The similarity scores are stored inside `scorefile.csv`.
 
 <a name="ae_plus_kmeans"/>
 
