@@ -53,12 +53,14 @@ to compile the cython files there.
 ### stars_extractor
 
 This project only contains some basic scripts. To extract stars from the original images, run
-`python stars_extractor.py --img_dir=/dir/with/large/images --target_dir=/dir/to/save/star/patches`), 
+
+    python stars_extractor.py --img_dir=/dir/with/large/images --target_dir=/dir/to/save/star/patches 
 
 To filter the original star images, run
-`python create_dir_for_labeled_star_images.py --dataset_dir=/path/to/cosmology_aux_data_170429 --target_dir=/dir/to/save/filtered/images`
-where you may also specify whether to filter the labeled images to only keep those with label 1 by setting `--kind=labeled`, or to filter the scored images to only keep those with score above a custom number by setting `--scored_thresh=your_scored_threshold`.
 
+    python create_dir_for_labeled_star_images.py --dataset_dir=/path/to/cosmology_aux_data_170429 --target_dir=/dir/to/save/filtered/images
+
+where you may also specify whether to filter the labeled images to only keep those with label 1 by setting `--kind=labeled`, or to filter the scored images to only keep those with score above a custom number by setting `--scored_thresh=your_scored_threshold`.
 
 To measure and approximate an unsigned-integer-bound gaussian distribution of all kinds of stars in the images, run
 `python stars_clustered_distribution.py --unclustered_stars_dir=/dir/containing/unclustered/stars --clustered_stars_dir=/dir/containing/clustered/stars`
@@ -89,9 +91,8 @@ https://github.com/carpedm20/DCGAN-tensorflow/blob/master/ops.py (referenced pub
 
     python gan.py --dataset-dir=/path/to/dataset
 
-To train a conditional model on the 28x28 star patches, adjust the config.yaml s.t. the variable `conditional`is set to `True` and `model_kind`to `4`. Also make sure that the
-provided data set contains a folder for each category with the corresponding images inside. For unconditional training on
-the 28x28 star patches, set `conditional` to `False` and `model_kind `to `3`, and make sure that the provided path
+To train a conditional model on the 28x28 star patches, adjust the config.yaml s.t. the variable `conditional`is set to `True` and `model_kind`to `4`. Also make sure that the provided data set contains a folder for each category with the corresponding images inside. For unconditional training on
+the 28x28 star patches, set `conditional` to `False` and `model_kind` to `3`, and make sure that the provided path
 to the data set directly contains the images. The results will be saved in a new folder inside the `checkpoints` directory.
 
 <a name="generate_complete_images"/>
@@ -99,7 +100,9 @@ to the data set directly contains the images. The results will be saved in a new
 ### Generate Complete Images
 
 Run 
-`python create_complete_images.py` 
+
+    python create_complete_images.py
+
 to generate and score images while looping infinitely to find a good distribution. Provide the path to a cDCGAN checkpoint as argument `--checkpoint_path` if you wish to use another than the default one. Set `--find_good_latents` to `False` if you wish to simply create and score some images without the infinite loop using the saved distribution.
 
 <a name="vae"/>
@@ -146,7 +149,7 @@ where `dir/with/star/images` is the directory containing the star patches of siz
 encoder is saved in a separate directory inside the `checkpoints` folder. Provide the path to this encoder model to the
 k-means script as argument. Run
 
-    python kmeans.py --econder_path /path/to/encoder_config.json
+    python kmeans.py --econder_path=/path/to/encoder_config.json
 
 The clustered images are saved to a separate directory inside `images/clustered_stars` if not specified otherwise via
 the `--target_dir` argument.
