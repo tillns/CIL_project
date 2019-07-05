@@ -84,7 +84,7 @@ places them randomly onto a black image.
 
 ### DCGAN
 
-A large DCGAN for star the generation of galaxy images. The model can be trained with
+A large DCGAN for the generation of galaxy images. The model can be trained with
     
     python dcgan_train.py --data_directory=/path/to/dataset
 
